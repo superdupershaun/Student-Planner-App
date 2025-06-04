@@ -549,6 +549,23 @@
         }
 
         /**
+         * Converts total minutes from midnight back to a human-readable time string (e.g., "HH:MM AM/PM").
+         * @param {number} totalMinutes - Total minutes from midnight.
+         * @returns {string} Formatted time string.
+         */
+        function formatMinutesToTime(totalMinutes) {
+            if (totalMinutes < 0 || totalMinutes >= 1440) return 'Invalid Time'; // 24 * 60 = 1440
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 === 0 ? 12 : hours % 12;
+            const displayMinutes = minutes < 10 ? `0${minutes}` : minutes;
+
+            return `${displayHours}:${displayMinutes} ${ampm}`;
+        }
+
+        /**
          * Parses a time range string (e.g., "9:00 AM - 10:00 AM") into start and end minutes from midnight.
          * @param {string} timeRangeString - The time range string.
          * @returns {{start: number, end: number}} An object with start and end times in minutes.
@@ -1516,27 +1533,59 @@
                                                 if (!assignment || !assignment.startTime || !assignment.endTime) return '';
 
                                                 const studentRange = parseTimeRange(`${assignment.startTime} - ${assignment.endTime}`);
-                                                let isOverlapping = false;
+                                                let timeDisplayHtml = '';
+                                                let hasOverlap = false;
 
-                                                // Check for overlap with other students on the same day
+                                                // Collect all overlapping segments for this student's current assignment
+                                                const overlaps = [];
                                                 for (const otherStudent of studentsOnThisDay) {
                                                     if (otherStudent.id === student.id) continue; // Don't compare with self
 
                                                     const otherAssignment = otherStudent.assignedDays.find(item => item.day === day);
                                                     if (otherAssignment && otherAssignment.startTime && otherAssignment.endTime) {
                                                         const otherRange = parseTimeRange(`${otherAssignment.startTime} - ${otherAssignment.endTime}`);
-                                                        if (checkOverlap(studentRange, otherRange)) {
-                                                            isOverlapping = true;
-                                                            break;
+                                                        const overlapStart = Math.max(studentRange.start, otherRange.start);
+                                                        const overlapEnd = Math.min(studentRange.end, otherRange.end);
+
+                                                        if (overlapStart < overlapEnd) {
+                                                            overlaps.push({ start: overlapStart, end: overlapEnd });
+                                                            hasOverlap = true;
                                                         }
                                                     }
                                                 }
 
+                                                // Sort overlaps by start time to process them sequentially
+                                                overlaps.sort((a, b) => a.start - b.start);
+
+                                                let currentSegmentStart = studentRange.start;
+
+                                                // Build the time display with highlighted overlaps
+                                                for (const overlap of overlaps) {
+                                                    // Add non-overlapping segment before current overlap
+                                                    if (currentSegmentStart < overlap.start) {
+                                                        timeDisplayHtml += `<span>${escapeTemplateLiteral(formatMinutesToTime(currentSegmentStart))} - ${escapeTemplateLiteral(formatMinutesToTime(overlap.start))}</span>`;
+                                                    }
+                                                    // Add overlapping segment
+                                                    timeDisplayHtml += `<span class="text-red-600 font-bold">${escapeTemplateLiteral(formatMinutesToTime(overlap.start))} - ${escapeTemplateLiteral(formatMinutesToTime(overlap.end))}</span>`;
+                                                    currentSegmentStart = overlap.end;
+                                                }
+
+                                                // Add remaining non-overlapping segment after all overlaps
+                                                if (currentSegmentStart < studentRange.end) {
+                                                    timeDisplayHtml += `<span>${escapeTemplateLiteral(formatMinutesToTime(currentSegmentStart))} - ${escapeTemplateLiteral(formatMinutesToTime(studentRange.end))}</span>`;
+                                                }
+
+                                                // If no overlaps, just display the original time
+                                                if (!hasOverlap) {
+                                                    timeDisplayHtml = `<span>${escapeTemplateLiteral(assignment.startTime)} - ${escapeTemplateLiteral(assignment.endTime)}</span>`;
+                                                }
+
+
                                                 return `
                                                     <li class="student-item" style="color: ${escapeTemplateLiteral(student.color)};">
                                                         ${escapeTemplateLiteral(student.firstName)} ${escapeTemplateLiteral(student.lastName)} ${escapeTemplateLiteral(getStarsForCategory(student.focusCategory))}
-                                                        <span class="student-time ${isOverlapping ? 'text-red-600 font-bold' : ''}">
-                                                            ${escapeTemplateLiteral(assignment.startTime)} - ${escapeTemplateLiteral(assignment.endTime)}
+                                                        <span class="student-time">
+                                                            ${timeDisplayHtml}
                                                         </span>
                                                     </li>
                                                 `;
