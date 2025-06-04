@@ -347,13 +347,14 @@
         // IMPORTANT: Replace "YOUR_FIREBASE_API_KEY" with your actual Firebase Web API Key from your Firebase project settings.
         // The Canvas environment will automatically provide a key if this is left as an empty string.
         const firebaseConfig = {
-         apiKey: "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA",
-  authDomain: "private-lessons-ab22f.firebaseapp.com",
-  projectId: "private-lessons-ab22f",
-  storageBucket: "private-lessons-ab22f.firebasestorage.app",
-  messagingSenderId: "21096957752",
-  appId: "1:21096957752:web:0cf6a8d3556b40cb57a3cd",
-  measurementId: "G-JMKM2MM8DN"
+            apiKey: "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA",
+            authDomain: "private-lessons-ab22f.firebaseapp.com",
+            projectId: "private-lessons-ab22f",
+            storageBucket: "private-lessons-ab22f.firebasestorage.app",
+            messagingSenderId: "21096957752",
+            appId: "1:21096957752:web:0cf6a8d3556b40cb57a3cd",
+            measurementId: "G-JMKM2MM8DN"
+        }; // Added missing closing curly brace
 
         console.log("Firebase Config being used:", firebaseConfig);
 
@@ -1610,7 +1611,7 @@
                     document.getElementById('newFocusCategory').onchange = (e) => { newFocusCategory = e.target.value; };
 
                     // Attach event listeners for new tumbling skill sliders
-                    appDiv.querySelectorAll('#add-student-form input[type="range"][data-skill-type="new-tumbling"]').forEach(slider => {
+                    appDiv.querySelectorAll('#add-student-form input[type="range'][data-skill-type="new-tumbling"]').forEach(slider => {
                         slider.oninput = (e) => {
                             const displayElement = addForm.querySelector(`span[data-skill="${e.target.dataset.skill}"][data-skill-type="new-tumbling-display"]`);
                             handleTumblingSkillChange(e.target.dataset.skill, parseInt(e.target.value), false, displayElement, e.target);
