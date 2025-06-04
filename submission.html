@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Information Submission</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 48rem; /* Slightly smaller max-width for submission form */
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .label {
+            display: block;
+            color: #374151;
+            font-size: 0.875rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .input-field {
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            appearance: none;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            color: #374151;
+            line-height: 1.25;
+            outline: none;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+        .btn {
+            font-weight: 700;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .btn-blue {
+            background-color: #2563eb;
+            color: #ffffff;
+        }
+        .btn-blue:hover {
+            background-color: #1d4ed8;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(75, 85, 99, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 24rem;
+            width: 100%;
+            text-align: center;
+        }
+        .modal-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .modal-content p {
+            color: #374151;
+            margin-bottom: 1.5rem;
+        }
+        .loading-spinner {
+            border-top-color: #3b82f6;
+            border-bottom-color: #3b82f6;
+            animation: spin 1s linear infinite;
+            border-radius: 9999px;
+            height: 4rem;
+            width: 4rem;
+            border-width: 4px;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Student Information Form</h1>
+        <p class="text-gray-600 mb-6 text-center">Please fill out the details below for the student.</p>
+
+        <form id="student-submission-form" class="p-4 border border-gray-200 rounded-lg">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-group">
+                    <label for="studentFirstName" class="label">Student First Name:</label>
+                    <input type="text" id="studentFirstName" class="input-field" placeholder="e.g., Alex" required>
+                </div>
+                <div class="form-group">
+                    <label for="studentLastName" class="label">Student Last Name:</label>
+                    <input type="text" id="studentLastName" class="input-field" placeholder="e.g., Johnson" required>
+                </div>
+                <div class="form-group md:col-span-2">
+                    <label for="studentPhone" class="label">Student Phone Number (Optional):</label>
+                    <input type="tel" id="studentPhone" class="input-field" placeholder="e.g., 555-123-4567" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
+                </div>
+                <div class="form-group md:col-span-2">
+                    <label for="parentName" class="label">Parent/Guardian Name (Optional):</label>
+                    <input type="text" id="parentName" class="input-field" placeholder="e.g., Chris Johnson">
+                </div>
+                <div class="form-group md:col-span-2">
+                    <label for="parentPhone" class="label">Parent/Guardian Phone Number (Optional):</label>
+                    <input type="tel" id="parentPhone" class="input-field" placeholder="e.g., 555-987-6543" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
+                </div>
+            </div>
+
+            <div class="form-group mt-4">
+                <label for="goals" class="label">Goals / Things to Learn (Optional):</label>
+                <textarea id="goals" class="input-field h-24" placeholder="e.g., Wants to learn a back handspring, improve flexibility for flying"></textarea>
+            </div>
+
+            <div class="flex gap-2 mt-6">
+                <button type="submit" class="btn btn-blue flex-1">Submit Information</button>
+            </div>
+        </form>
+
+        <div id="loading-spinner" class="modal hidden">
+            <div class="modal-content flex flex-col items-center justify-center">
+                <div class="loading-spinner"></div>
+                <p class="mt-4 text-lg text-gray-700">Submitting information...</p>
+            </div>
+        </div>
+
+        <div id="success-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Submission Successful!</h3>
+                <p>Thank you! Your information has been submitted. The planner owner will review it shortly.</p>
+                <button type="button" class="btn btn-blue" onclick="window.location.reload()">Submit Another</button>
+            </div>
+        </div>
+
+        <div id="error-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Submission Failed</h3>
+                <p id="error-message">An unexpected error occurred. Please try again later.</p>
+                <button type="button" class="btn btn-blue" onclick="document.getElementById('error-modal').classList.add('hidden')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, addDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // IMPORTANT: Use your actual Firebase Web API Key and App ID
+        const firebaseConfig = {
+            apiKey: "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA",
+            authDomain: "private-lessons-ab22f.firebaseapp.com",
+            projectId: "private-lessons-ab22f",
+            storageBucket: "private-lessons-ab22f.firebasestorage.app",
+            messagingSenderId: "21096957752",
+            appId: "1:21096957752:web:0cf6a8d3556b40cb57a3cd",
+            measurementId: "G-JMKM2MM8DN"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Utility function to escape characters that could break HTML or JavaScript contexts
+        function escapeTemplateLiteral(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/`/g, '\\`')
+                      .replace(/"/g, '&quot;')
+                      .replace(/'/g, '&#39;');
+        }
+
+        // Function to get query parameters from the URL
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        const ownerUserId = getQueryParam('ownerId');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.appId;
+
+        // Display error if ownerId is missing
+        if (!ownerUserId) {
+            document.getElementById('app').innerHTML = `
+                <div class="text-center p-8 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                    <h2 class="text-2xl font-bold mb-4">Error: Missing Owner ID</h2>
+                    <p>This submission form is not configured correctly. Please ensure you access it via a valid link provided by the planner owner.</p>
+                </div>
+            `;
+        }
+
+        function formatPhoneNumber(value) {
+            if (!value) return '';
+            const cleaned = value.replace(/\D/g, '');
+            let formatted = '';
+            if (cleaned.length > 0) { formatted += cleaned.substring(0, 3); }
+            if (cleaned.length > 3) { formatted += '-' + cleaned.substring(3, 6); }
+            if (cleaned.length > 6) { formatted += '-' + cleaned.substring(6, 10); }
+            return formatted;
+        }
+
+        // Ensure DOM is fully loaded before attaching event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if ownerUserId is present before trying to attach listeners
+            // This prevents errors if the ownerId is missing and the error message is displayed instead.
+            if (ownerUserId) {
+                const studentPhoneInput = document.getElementById('studentPhone');
+                if (studentPhoneInput) {
+                    studentPhoneInput.oninput = (e) => {
+                        e.target.value = formatPhoneNumber(e.target.value);
+                    };
+                }
+
+                const parentPhoneInput = document.getElementById('parentPhone');
+                if (parentPhoneInput) {
+                    parentPhoneInput.oninput = (e) => {
+                        e.target.value = formatPhoneNumber(e.target.value);
+                    };
+                }
+
+                const submissionForm = document.getElementById('student-submission-form');
+                if (submissionForm) {
+                    submissionForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+
+                        document.getElementById('loading-spinner').classList.remove('hidden');
+
+                        const submissionData = {
+                            firstName: document.getElementById('studentFirstName').value.trim(),
+                            lastName: document.getElementById('studentLastName').value.trim(),
+                            studentPhone: document.getElementById('studentPhone').value.trim(),
+                            parentName: document.getElementById('parentName').value.trim(),
+                            parentPhone: document.getElementById('parentPhone').value.trim(),
+                            goals: document.getElementById('goals').value.trim(),
+                            submissionDate: new Date().toISOString() // Timestamp for review
+                        };
+
+                        try {
+                            // Add to a public collection accessible by the ownerUserId
+                            const submissionsCollectionRef = collection(db, `artifacts/${appId}/public/submissions/${ownerUserId}/pendingStudents`);
+                            await addDoc(submissionsCollectionRef, submissionData);
+
+                            document.getElementById('loading-spinner').classList.add('hidden');
+                            document.getElementById('success-modal').classList.remove('hidden');
+                            submissionForm.reset(); // Clear the form
+                        } catch (error) {
+                            console.error("Error submitting student information:", error);
+                            document.getElementById('loading-spinner').classList.add('hidden');
+                            document.getElementById('error-message').textContent = `Submission failed: ${escapeTemplateLiteral(error.message)}`;
+                            document.getElementById('error-modal').classList.remove('hidden');
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
