@@ -924,6 +924,7 @@
                 }
                 return item;
             });
+            renderApp(); // Add this to re-render the UI after state update
         }
 
         function toggleDayForEditingStudent(day) {
@@ -943,6 +944,7 @@
                 }
                 return item;
             });
+            renderApp(); // Add this to re-render the UI after state update
         }
 
         // Handle proficiency change from slider (now takes numerical value)
@@ -1645,6 +1647,7 @@
                         checkbox.onchange = (e) => { toggleDayForNewStudent(e.target.dataset.day); };
                     });
 
+                    // Event listeners for time selects in add form
                     appDiv.querySelectorAll('#add-student-form select[data-day-time-type]').forEach(select => {
                         select.onchange = (e) => { handleTimeChangeForNewStudent(e.target.dataset.day, e.target.dataset.dayTimeType, e.target.value); };
                     });
@@ -1719,7 +1722,8 @@
                             checkbox.onchange = (e) => { toggleDayForEditingStudent(e.target.dataset.day); };
                         });
 
-                        editForm.querySelectorAll(`select[data-edit-day-time-type][data-edit-day="${editingStudentId}"]`).forEach(select => {
+                        // Event listeners for time selects in edit form
+                        editForm.querySelectorAll(`select[data-day-time-type][data-day]`).forEach(select => {
                             select.onchange = (e) => { handleTimeChangeForEditingStudent(e.target.dataset.day, e.target.dataset.dayTimeType, e.target.value); };
                         });
 
@@ -1736,7 +1740,7 @@
                                 editingFlyingSkillProficiencies = [];
                                 editingGoals = '';
                                 editingFocusCategory = '';
-                                                editingStudentColor = '';
+                                editingStudentColor = '';
                                 editingStudentDays = [];
                                 renderApp();
                             };
