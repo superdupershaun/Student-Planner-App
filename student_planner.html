@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 64rem;
+            margin-bottom: 2rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .label {
+            display: block;
+            color: #374151;
+            font-size: 0.875rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .input-field {
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            appearance: none;
+            border: 1px solid #d1d5db;
+            border-radius: 0.25rem;
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            color: #374151;
+            line-height: 1.25;
+            outline: none;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+        .btn {
+            font-weight: 700;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .btn-blue {
+            background-color: #2563eb;
+            color: #ffffff;
+        }
+        .btn-blue:hover {
+            background-color: #1d4ed8;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .btn-green {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+        .btn-green:hover {
+            background-color: #059669;
+        }
+        .btn-yellow {
+            background-color: #f59e0b;
+            color: #ffffff;
+        }
+        .btn-yellow:hover {
+            background-color: #d97706;
+        }
+        .btn-red {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+        .btn-red:hover {
+            background-color: #dc2626;
+        }
+        .btn-gray {
+            background-color: #6b7280;
+            color: #ffffff;
+        }
+        .btn-gray:hover {
+            background-color: #4b5563;
+        }
+        .color-picker-btn {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 9999px;
+            border: 2px solid #d1d5db;
+            cursor: pointer;
+            transition: border-color 0.15s ease-in-out, ring-width 0.15s ease-in-out, ring-color 0.15s ease-in-out;
+        }
+        .color-picker-btn.selected {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+        }
+        .calendar-day {
+            background-color: #eff6ff;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 7.5rem;
+        }
+        .calendar-day h3 {
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 0.5rem;
+        }
+        .student-item {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            text-align: center;
+        }
+        .student-time {
+            display: block;
+            font-size: 0.75rem;
+            color: #4b5563;
+        }
+        .modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(75, 85, 99, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            max-width: 24rem;
+            width: 100%;
+            text-align: center;
+        }
+        .modal-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+        .modal-content p {
+            color: #374151;
+            margin-bottom: 1.5rem;
+        }
+        .loading-spinner {
+            border-top-color: #3b82f6;
+            border-bottom-color: #3b82f6;
+            animation: spin 1s linear infinite;
+            border-radius: 9999px;
+            height: 4rem;
+            width: 4rem;
+            border-width: 4px;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container">
+        <div id="loading-spinner" class="flex flex-col items-center justify-center h-64">
+            <div class="loading-spinner"></div>
+            <p class="mt-4 text-lg text-gray-700">Loading planner...</p>
+            <p class="text-sm text-gray-500 mt-2">Please wait while we connect to your data.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        // Firebase imports using ES Modules from CDN
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase instances
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let userEmail = null; // New: To store user's email
+        let isAuthReady = false;
+        let isLoadingLLM = false; // New: To control LLM loading spinner
+        let llmOutputModalMessage = ''; // New: For LLM output modal
+        let showLlmOutputModalState = false; // Renamed to avoid conflict with function name
+
+
+        // Ensure __app_id and __firebase_config are defined in the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = {
+          apiKey: "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA",
+          authDomain: "private-lessons-ab22f.firebaseapp.com",
+          projectId: "private-lessons-ab22f",
+          storageBucket: "private-lessons-ab22f.firebasestorage.app",
+          messagingSenderId: "21096957752",
+          appId: "1:21096957752:web:0cf6a8d3556b40cb57a3cd",
+          measurementId: "G-JMKM2MM8DN"
+        };
+
+        console.log("Firebase Config being used:", firebaseConfig);
+
+        const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+        const predefinedColors = [
+            '#EF4444', '#22C55E', '#3B82F6', '#A855F7', '#F97316',
+            '#14B8A6', '#6B7280', '#EAB308', '#EC4899', '#84CC16',
+            '#06B6D4', '#6D28D9', '#BE123C', '#D97706', '#16A34A',
+            '#DC2626', '#FBBF24', '#60A5FA', '#9333EA', '#FB923C',
+        ];
+
+        const tumblingSkillsOptions = [
+            { level: "Fundamentals", skills: ["Foward roll", "Backroll", "Handstand", "Bridge", "Cartwheel", "Roundoff"] },
+            { level: "Level 1", skills: ["Backbend", "Backwalkover", "Front walkover", "Valdez"] },
+            { level: "Level 2", skills: ["Standing back handspring", "Front handspring/front bounder", "Standing multiple handspring", "Round off back handspring"] },
+            { level: "Level 3", skills: ["Round off back tuck", "Round off back handspring back tuck", "Ariel"] },
+            { level: "Level 4", skills: ["Standing back tuck", "Standing back handspring back tuck", "Round off back handspring layout"] },
+            { level: "Level 5", skills: ["Round off backhandspring full", "Standing full"] }
+        ];
+
+        const proficiencyLevels = ["Perfect by themselves", "With a little help", "Don't have the skill yet"];
+
+        const flyingSkillsOptions = {
+            "Lt Leg Skills": ["Lt leg split", "Lt leg heel stretch", "Lt leg liberty", "Lt leg bow and arrow", "Lt leg scorpion", "Lt leg needle", "Lt leg arabesque"],
+            "Rt Leg Skills": ["Rt leg split", "Rt leg heel stretch", "Rt leg liberty", "Rt leg bow and arrow", "Rt leg scorpion", "Rt leg needle", "Rt leg arabesque"]
+        };
+
+        const flyingProficiencyLevels = ["Picture-perfect", "Needs a little work", "Stiff as a board"];
+
+        const focusCategories = [
+            { name: "Flying Only", stars: "⭐" },
+            { name: "Tumbling Only", stars: "⭐⭐" },
+            { name: "Both (Tumbling & Flying)", stars: "⭐⭐⭐" },
+            { name: "Tumbling & Basing", stars: "⭐⭐⭐⭐" }
+        ];
+
+        // State variables (simulated with global variables and render function)
+        let students = [];
+        let newStudentFirstName = '';
+        let newStudentLastName = '';
+        let newParentName = '';
+        let newStudentPhone = '';
+        let newParentPhone = '';
+        let newTumblingSkillProficiencies = [];
+        let newFlyingSkillProficiencies = [];
+        let newGoals = '';
+        let newFocusCategory = focusCategories[0].name;
+        let selectedColor = predefinedColors[0];
+        let selectedDaysForNewStudent = [];
+        let showModal = false;
+        let modalMessage = '';
+        let editingStudentId = null;
+        let editingStudentFirstName = '';
+        let editingStudentLastName = '';
+        let editingParentName = '';
+        let editingStudentPhone = '';
+        let editingParentPhone = '';
+        let editingTumblingSkillProficiencies = [];
+        let editingFlyingSkillProficiencies = [];
+        let editingGoals = '';
+        let editingFocusCategory = '';
+        let editingStudentColor = '';
+        let editingStudentDays = [];
+        let expandedStudentId = null;
+
+        let loginEmail = ''; // New: For login/signup
+        let loginPassword = ''; // New: For login/signup
+
+        function showCustomModal(message) {
+            modalMessage = message;
+            showModal = true;
+            renderApp();
+        }
+
+        function closeCustomModal() {
+            showModal = false;
+            modalMessage = '';
+            renderApp();
+        }
+
+        // Renamed function to avoid conflict with variable `showLlmOutputModalState`
+        function displayLlmOutputModal(message) {
+            llmOutputModalMessage = message;
+            showLlmOutputModalState = true;
+            renderApp();
+        }
+
+        // Renamed function to avoid conflict with variable `showLlmOutputModalState`
+        function hideLlmOutputModal() {
+            showLlmOutputModalState = false;
+            llmOutputModalMessage = '';
+            renderApp();
+        }
+
+        function generateTimeOptions() {
+            const times = [];
+            for (let hour = 8; hour <= 21; hour++) {
+                for (let minute = 0; minute < 60; minute += 30) {
+                    const h = hour > 12 ? hour - 12 : hour;
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    const m = minute === 0 ? '00' : minute;
+                    const time = `${h}:${m} ${ampm}`;
+                    times.push(time);
+                }
+            }
+            return times;
+        }
+        const timeOptions = generateTimeOptions();
+
+        function getStarsForCategory(categoryName) {
+            const category = focusCategories.find(cat => cat.name === categoryName);
+            return category ? category.stars : '';
+        }
+
+        function formatPhoneNumber(value) {
+            if (!value) return '';
+            const cleaned = value.replace(/\D/g, '');
+            let formatted = '';
+            if (cleaned.length > 0) { formatted += cleaned.substring(0, 3); }
+            if (cleaned.length > 3) { formatted += '-' + cleaned.substring(3, 6); }
+            if (cleaned.length > 6) { formatted += '-' + cleaned.substring(6, 10); }
+            return formatted;
+        }
+
+        // --- Firebase Initialization and Authentication ---
+        async function initializeFirebaseAndAuth() {
+            try {
+                if (!app) {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                }
+
+                // Set up the auth state change listener FIRST
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userEmail = user.email; // Store email if available
+                        console.log("Auth state changed: User ID set to", userId, "Email:", userEmail);
+                    } else {
+                        userId = crypto.randomUUID(); // Fallback to anonymous ID
+                        userEmail = null;
+                        console.log("Auth state changed: Anonymous User ID set.");
+                    }
+                    isAuthReady = true;
+                    setupFirestoreListener(); // Setup listener once auth is ready
+                    renderApp(); // Initial render after auth is ready
+                });
+
+                // Attempt custom token sign-in if available (Canvas environment)
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                        console.log("Signed in with custom token.");
+                    } catch (authError) {
+                        console.warn("Custom token mismatch. The provided custom token is invalid. Attempting anonymous sign-in as a fallback.");
+                        showCustomModal(
+                            `Authentication failed: The provided custom token is invalid. ` +
+                            `The app will attempt to sign in anonymously to proceed. ` +
+                            `You can still use the planner, but data will be tied to an anonymous user ID. ` +
+                            `(Error: ${authError.message})`
+                        );
+                        await signInAnonymously(auth); // Fallback to anonymous
+                        console.log("Signed in anonymously after custom token mismatch.");
+                    }
+                } else {
+                    // If no custom token, and no user is currently logged in, sign in anonymously
+                    // This handles cases where the user might have previously signed out or is new.
+                    if (!auth.currentUser) {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously (no custom token provided and no existing user).");
+                    }
+                }
+
+            } catch (overallError) {
+                console.error("Overall Firebase initialization error:", overallError);
+                showCustomModal(`Firebase setup error: ${overallError.message}`);
+                isAuthReady = true;
+                renderApp();
+            }
+        }
+
+        // --- Email/Password Authentication Functions ---
+        async function handleSignUp(event) {
+            event.preventDefault();
+            if (!loginEmail || !loginPassword) {
+                showCustomModal("Please enter both email and password for sign up.");
+                return;
+            }
+            try {
+                await createUserWithEmailAndPassword(auth, loginEmail, loginPassword);
+                showCustomModal("Account created successfully! You are now signed in.");
+                loginEmail = '';
+                loginPassword = '';
+            } catch (error) {
+                console.error("Error signing up:", error);
+                showCustomModal(`Sign up failed: ${error.message}`);
+            }
+        }
+
+        async function handleSignIn(event) {
+            event.preventDefault();
+            if (!loginEmail || !loginPassword) {
+                showCustomModal("Please enter both email and password for sign in.");
+                return;
+            }
+            try {
+                await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
+                showCustomModal("Signed in successfully!");
+                loginEmail = '';
+                loginPassword = '';
+            } catch (error) {
+                console.error("Error signing in:", error);
+                showCustomModal(`Sign in failed: ${error.message}`);
+            }
+        }
+
+        async function handleSignOut() {
+            try {
+                await signOut(auth);
+                showCustomModal("Signed out successfully!");
+                // After sign out, onAuthStateChanged will trigger, setting userId to a new anonymous ID
+            } catch (error) {
+                console.error("Error signing out:", error);
+                showCustomModal(`Sign out failed: ${error.message}`);
+            }
+        }
+
+        // --- Firestore Data Listener ---
+        function setupFirestoreListener() {
+            if (!isAuthReady || !db || !userId) {
+                console.log("Skipping Firestore listener setup: Auth not ready or userId not available.");
+                return;
+            }
+
+            console.log("Setting up Firestore listener for userId:", userId);
+            const studentsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/students`);
+
+            onSnapshot(studentsCollectionRef, (snapshot) => {
+                students = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    const assignedDays = (data.assignedDays || []).map(item => {
+                        if (typeof item === 'string') {
+                            return { day: item, startTime: timeOptions[0] || 'Not set', endTime: timeOptions[0] || 'Not set' };
+                        } else if (item.time) {
+                            return { day: item.day, startTime: item.time, endTime: timeOptions[0] || 'Not set' };
+                        }
+                        return item;
+                    });
+
+                    let tumblingSkillProficiencies = [];
+                    if (Array.isArray(data.tumblingSkillProficiencies)) {
+                        tumblingSkillProficiencies = data.tumblingSkillProficiencies;
+                    } else if (typeof data.tumblingSkills === 'string' && data.tumblingSkills.trim() !== '') {
+                        tumblingSkillProficiencies = [{ skill: data.tumblingSkills.trim(), proficiency: proficiencyLevels[0] }];
+                    }
+
+                    let flyingSkillProficiencies = [];
+                    if (Array.isArray(data.flyingSkillProficiencies)) {
+                        flyingSkillProficiencies = data.flyingSkillProficiencies;
+                    } else if (typeof data.flyingSkills === 'string' && data.flyingSkills.trim() !== '') {
+                        flyingSkillProficiencies = [{ skill: data.flyingSkills.trim(), proficiency: flyingProficiencyLevels[0] }];
+                    }
+
+                    return {
+                        id: doc.id,
+                        firstName: data.firstName || '',
+                        lastName: data.lastName || '',
+                        parentName: data.parentName || '',
+                        studentPhone: data.studentPhone || '',
+                        parentPhone: data.parentPhone || '',
+                        tumblingSkillProficiencies: tumblingSkillProficiencies,
+                        flyingSkillProficiencies: flyingSkillProficiencies,
+                        goals: data.goals || '',
+                        focusCategory: data.focusCategory || focusCategories[0].name,
+                        color: data.color || predefinedColors[0],
+                        assignedDays: assignedDays
+                    };
+                });
+                console.log("Students fetched:", students);
+                renderApp();
+            }, (error) => {
+                console.error("Error fetching students:", error);
+                showCustomModal(`Error loading students: ${error.message}`);
+            });
+        }
+
+        // --- LLM Integration Functions ---
+        async function callGeminiAPI(prompt) {
+            isLoadingLLM = true;
+            renderApp(); // Show loading spinner
+
+            try {
+                let chatHistory = [];
+                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // If you want to use models other than gemini-2.0-flash or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    return text;
+                } else {
+                    console.error("Unexpected LLM response structure:", result);
+                    throw new Error("Failed to get a valid response from the LLM.");
+                }
+            } catch (error) {
+                console.error("Error calling Gemini API:", error);
+                showCustomModal(`Error generating content: ${error.message}`);
+                return null;
+            } finally {
+                isLoadingLLM = false;
+                renderApp(); // Hide loading spinner
+            }
+        }
+
+        async function suggestGoals(isEditing) {
+            const firstName = isEditing ? editingStudentFirstName : newStudentFirstName;
+            const lastName = isEditing ? editingStudentLastName : newStudentLastName;
+            const tumblingSkills = isEditing ? editingTumblingSkillProficiencies : newTumblingSkillProficiencies;
+            const flyingSkills = isEditing ? editingFlyingSkillProficiencies : newFlyingSkillProficiencies;
+
+            if (!firstName.trim() || !lastName.trim()) {
+                showCustomModal("Please enter the student's first and last name before suggesting goals.");
+                return;
+            }
+
+            const tumblingSkillsStr = tumblingSkills.length > 0 ?
+                tumblingSkills.map(s => `${s.skill} (${s.proficiency})`).join(', ') : 'None specified.';
+            const flyingSkillsStr = flyingSkills.length > 0 ?
+                flyingSkills.map(s => `${s.skill} (${s.proficiency})`).join(', ') : 'None specified.';
+
+            const prompt = `You are an expert gymnastics/cheerleading coach. Given a student's current tumbling and flying skills with their proficiency levels, suggest 3-5 specific, actionable goals for their next 3-6 months of training. Each goal should clearly state the skill and the desired outcome, focusing on progression. If a skill is 'Don't have the skill yet', suggest a foundational step. If 'Needs a little work', suggest refinement. If 'Perfect by themselves', suggest progression to a harder variation or combination.
+Student Name: ${firstName} ${lastName}
+Tumbling Skills: ${tumblingSkillsStr}
+Flying Skills: ${flyingSkillsStr}
+Provide the goals as a numbered list.`;
+
+            const generatedGoals = await callGeminiAPI(prompt);
+            if (generatedGoals) {
+                if (isEditing) {
+                    editingGoals = generatedGoals;
+                } else {
+                    newGoals = generatedGoals;
+                }
+                renderApp(); // Update the textarea
+            }
+        }
+
+        async function generateLessonPlan(isEditing) {
+            const firstName = isEditing ? editingStudentFirstName : newStudentFirstName;
+            const lastName = isEditing ? editingStudentLastName : newStudentLastName;
+            const tumblingSkills = isEditing ? editingTumblingSkillProficiencies : newTumblingSkillProficiencies;
+            const flyingSkills = isEditing ? editingFlyingSkillProficiencies : newFlyingSkillProficiencies;
+            const goals = isEditing ? editingGoals : newGoals;
+            const focusCategory = isEditing ? editingFocusCategory : newFocusCategory;
+
+            if (!firstName.trim() || !lastName.trim()) {
+                showCustomModal("Please enter the student's first and last name before generating a lesson plan.");
+                return;
+            }
+
+            const tumblingSkillsStr = tumblingSkills.length > 0 ?
+                tumblingSkills.map(s => `${s.skill} (${s.proficiency})`).join(', ') : 'None specified.';
+            const flyingSkillsStr = flyingSkills.length > 0 ?
+                flyingSkills.map(s => `${s.skill} (${s.proficiency})`).join(', ') : 'None specified.';
+
+            const prompt = `You are an expert gymnastics/cheerleading coach. Create a concise, 3-part lesson plan (Warm-up, Skill Progression, Conditioning/Cool-down) for a 60-minute private session for the following student. Base the plan on their current skills, proficiencies, and stated goals.
+Student Name: ${firstName} ${lastName}
+Tumbling Skills: ${tumblingSkillsStr}
+Flying Skills: ${flyingSkillsStr}
+Goals: ${goals.trim() || 'No specific goals provided.'}
+Focus Category: ${focusCategory}
+Provide the lesson plan as a numbered list with estimated times for each section.`;
+
+            const generatedPlan = await callGeminiAPI(prompt);
+            if (generatedPlan) {
+                displayLlmOutputModal(`<h3>Generated Lesson Plan for ${firstName} ${lastName}</h3><pre class="text-left whitespace-pre-wrap">${generatedPlan}</pre>`);
+            }
+        }
+
+        // --- Event Handlers for Student Data ---
+        async function handleAddStudent(event) {
+            event.preventDefault();
+            if (!newStudentFirstName.trim() || !newStudentLastName.trim() || !userId) {
+                showCustomModal("Please enter student's first and last name, and ensure you are logged in.");
+                return;
+            }
+
+            const fullName = `${newStudentFirstName.trim()} ${newStudentLastName.trim()}`;
+            const nameExists = students.some(student => `${student.firstName} ${student.lastName}`.toLowerCase() === fullName.toLowerCase());
+            if (nameExists) {
+                showCustomModal("A student with this full name already exists. Please choose a different name.");
+                return;
+            }
+
+            const newStudent = {
+                firstName: newStudentFirstName.trim(),
+                lastName: newStudentLastName.trim(),
+                parentName: newParentName.trim(),
+                studentPhone: newStudentPhone.trim(),
+                parentPhone: newParentPhone.trim(),
+                tumblingSkillProficiencies: newTumblingSkillProficiencies,
+                flyingSkillProficiencies: newFlyingSkillProficiencies,
+                goals: newGoals.trim(),
+                focusCategory: newFocusCategory,
+                color: selectedColor,
+                assignedDays: selectedDaysForNewStudent,
+            };
+
+            try {
+                const studentsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/students`);
+                await addDoc(studentsCollectionRef, newStudent);
+                newStudentFirstName = '';
+                newStudentLastName = '';
+                newParentName = '';
+                newStudentPhone = '';
+                newParentPhone = '';
+                newTumblingSkillProficiencies = [];
+                newFlyingSkillProficiencies = [];
+                newGoals = '';
+                newFocusCategory = focusCategories[0].name;
+                selectedColor = predefinedColors[0];
+                selectedDaysForNewStudent = [];
+                renderApp();
+            } catch (error) {
+                console.error("Error adding student:", error);
+                showCustomModal(`Error adding student: ${error.message}`);
+            }
+        }
+
+        async function handleUpdateStudent(event) {
+            event.preventDefault();
+            if (!editingStudentFirstName.trim() || !editingStudentLastName.trim() || !userId || !editingStudentId) {
+                showCustomModal("Please enter student's first and last name, and ensure a student is selected for editing.");
+                return;
+            }
+
+            const updatedFullName = `${editingStudentFirstName.trim()} ${editingStudentLastName.trim()}`;
+            const nameExists = students.some(
+                student => student.id !== editingStudentId && `${student.firstName} ${student.lastName}`.toLowerCase() === updatedFullName.toLowerCase()
+            );
+            if (nameExists) {
+                showCustomModal("Another student with this full name already exists. Please choose a different name.");
+                return;
+            }
+
+            try {
+                const studentDocRef = doc(db, `artifacts/${appId}/users/${userId}/students`, editingStudentId);
+                await updateDoc(studentDocRef, {
+                    firstName: editingStudentFirstName.trim(),
+                    lastName: editingStudentLastName.trim(),
+                    parentName: editingParentName.trim(),
+                    studentPhone: editingStudentPhone.trim(),
+                    parentPhone: editingParentPhone.trim(),
+                    tumblingSkillProficiencies: editingTumblingSkillProficiencies,
+                    flyingSkillProficiencies: editingFlyingSkillProficiencies,
+                    goals: editingGoals.trim(),
+                    focusCategory: editingFocusCategory,
+                    color: editingStudentColor,
+                    assignedDays: editingStudentDays,
+                });
+                editingStudentId = null;
+                editingStudentFirstName = '';
+                editingStudentLastName = '';
+                editingParentName = '';
+                editingStudentPhone = '';
+                editingParentPhone = '';
+                editingTumblingSkillProficiencies = [];
+                editingFlyingSkillProficiencies = [];
+                editingGoals = '';
+                editingFocusCategory = '';
+                editingStudentColor = '';
+                editingStudentDays = [];
+                renderApp();
+            } catch (error) {
+                console.error("Error updating student:", error);
+                showCustomModal(`Error updating student: ${error.message}`);
+            }
+        }
+
+        async function handleDeleteStudent(studentIdToDelete) {
+            try {
+                const studentDocRef = doc(db, `artifacts/${appId}/users/${userId}/students`, studentIdToDelete);
+                await deleteDoc(studentDocRef);
+            } catch (error) {
+                console.error("Error deleting student:", error);
+                showCustomModal(`Error deleting student: ${error.message}`);
+            }
+        }
+
+        function toggleDayForNewStudent(day) {
+            const existingDay = selectedDaysForNewStudent.find(item => item.day === day);
+            if (existingDay) {
+                selectedDaysForNewStudent = selectedDaysForNewStudent.filter(item => item.day !== day);
+            } else {
+                selectedDaysForNewStudent = [...selectedDaysForNewStudent, { day: day, startTime: '8:00 AM', endTime: '8:30 AM' }];
+            }
+            renderApp();
+        }
+
+        function handleTimeChangeForNewStudent(day, type, time) {
+            selectedDaysForNewStudent = selectedDaysForNewStudent.map(item => {
+                if (item.day === day) {
+                    return { ...item, [type]: time };
+                }
+                return item;
+            });
+        }
+
+        function toggleDayForEditingStudent(day) {
+            const existingDay = editingStudentDays.find(item => item.day === day);
+            if (existingDay) {
+                editingStudentDays = editingStudentDays.filter(item => item.day !== day);
+            } else {
+                editingStudentDays = [...editingStudentDays, { day: day, startTime: '8:00 AM', endTime: '8:30 AM' }];
+            }
+            renderApp();
+        }
+
+        function handleTimeChangeForEditingStudent(day, type, time) {
+            editingStudentDays = editingStudentDays.map(item => {
+                if (item.day === day) {
+                    return { ...item, [type]: time };
+                }
+                return item;
+            });
+        }
+
+        function handleTumblingSkillChange(skill, proficiency, isEditing = false) {
+            let targetArray = isEditing ? editingTumblingSkillProficiencies : newTumblingSkillProficiencies;
+            const existingSkillIndex = targetArray.findIndex(item => item.skill === skill);
+
+            if (proficiency === "") {
+                if (existingSkillIndex !== -1) {
+                    targetArray.splice(existingSkillIndex, 1);
+                }
+            } else {
+                if (existingSkillIndex !== -1) {
+                    targetArray[existingSkillIndex].proficiency = proficiency;
+                } else {
+                    targetArray.push({ skill: skill, proficiency: proficiency });
+                }
+            }
+
+            if (isEditing) {
+                editingTumblingSkillProficiencies = [...targetArray];
+            } else {
+                newTumblingSkillProficiencies = [...targetArray];
+            }
+        }
+
+        function handleFlyingSkillChange(skill, proficiency, isEditing = false) {
+            let targetArray = isEditing ? editingFlyingSkillProficiencies : newFlyingSkillProficiencies;
+            const existingSkillIndex = targetArray.findIndex(item => item.skill === skill);
+
+            if (proficiency === "") {
+                if (existingSkillIndex !== -1) {
+                    targetArray.splice(existingSkillIndex, 1);
+                }
+            } else {
+                if (existingSkillIndex !== -1) {
+                    targetArray[existingSkillIndex].proficiency = proficiency;
+                } else {
+                    targetArray.push({ skill: skill, proficiency: proficiency });
+                }
+            }
+
+            if (isEditing) {
+                editingFlyingSkillProficiencies = [...targetArray];
+            } else {
+                newFlyingSkillProficiencies = [...targetArray];
+            }
+        }
+
+        function startEditing(student) {
+            editingStudentId = student.id;
+            editingStudentFirstName = student.firstName;
+            editingStudentLastName = student.lastName;
+            editingParentName = student.parentName;
+            editingStudentPhone = student.studentPhone;
+            editingParentPhone = student.parentPhone;
+            editingTumblingSkillProficiencies = JSON.parse(JSON.stringify(student.tumblingSkillProficiencies || []));
+            editingFlyingSkillProficiencies = JSON.parse(JSON.stringify(student.flyingSkillProficiencies || []));
+            editingGoals = student.goals;
+            editingFocusCategory = student.focusCategory;
+            editingStudentColor = student.color;
+            editingStudentDays = (student.assignedDays || []).map(item => {
+                if (typeof item === 'string') {
+                    return { day: item, startTime: timeOptions[0] || 'Not set', endTime: timeOptions[0] || 'Not set' };
+                } else if (item.time) {
+                    return { day: item.day, startTime: item.time, endTime: timeOptions[0] || 'Not set' };
+                }
+                return item;
+            });
+            renderApp();
+        }
+
+        function toggleStudentDetails(studentId) {
+            expandedStudentId = (expandedStudentId === studentId) ? null : studentId;
+            renderApp();
+        }
+
+        // --- Main Render Function ---
+        function renderApp() {
+            const appDiv = document.getElementById('app');
+            let htmlContent = '';
+
+            if (!isAuthReady) {
+                htmlContent = `
+                    <div id="loading-spinner" class="flex flex-col items-center justify-center h-64">
+                        <div class="loading-spinner"></div>
+                        <p class="mt-4 text-lg text-gray-700">Loading planner...</p>
+                        <p class="text-sm text-gray-500 mt-2">Please wait while we connect to your data.</p>
+                    </div>
+                `;
+            } else {
+                htmlContent = `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Student Planner</h1>
+
+                    <!-- Auth Section -->
+                    <div class="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Authentication</h2>
+                        <div class="flex items-center justify-between mb-4">
+                            ${userEmail ?
+                                `<p class="text-gray-700">Logged in as: <span class="font-medium">${userEmail}</span></p>` :
+                                `<p class="text-gray-700">Currently using anonymous ID: <span class="font-mono bg-gray-100 px-2 py-1 rounded">${userId}</span></p>`
+                            }
+                            ${userEmail ? `
+                                <button type="button" id="signOutBtn" class="btn btn-red text-sm">Sign Out</button>
+                            ` : ''}
+                        </div>
+                        ${!userEmail ? `
+                            <form id="auth-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="form-group">
+                                    <label for="loginEmail" class="label">Email:</label>
+                                    <input type="email" id="loginEmail" class="input-field" value="${loginEmail}" placeholder="your@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="loginPassword" class="label">Password:</label>
+                                    <input type="password" id="loginPassword" class="input-field" value="${loginPassword}" placeholder="********">
+                                </div>
+                                <div class="col-span-1 md:col-span-2 flex gap-4 mt-2">
+                                    <button type="submit" id="signInBtn" class="btn btn-blue flex-1">Sign In</button>
+                                    <button type="submit" id="signUpBtn" class="btn btn-green flex-1">Sign Up</button>
+                                </div>
+                            </form>
+                        ` : ''}
+                    </div>
+
+                    <!-- Add New Student Form -->
+                    <form id="add-student-form" class="mb-8 p-4 border border-gray-200 rounded-lg">
+                        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Add New Student</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="form-group lg:col-span-1">
+                                <label for="newStudentFirstName" class="label">First Name:</label>
+                                <input type="text" id="newStudentFirstName" class="input-field" value="${newStudentFirstName}" placeholder="e.g., Alice" required>
+                            </div>
+                            <div class="form-group lg:col-span-1">
+                                <label for="newStudentLastName" class="label">Last Name:</label>
+                                <input type="text" id="newStudentLastName" class="input-field" value="${newStudentLastName}" placeholder="e.g., Smith" required>
+                            </div>
+                            <div class="form-group lg:col-span-2">
+                                <label for="newStudentPhone" class="label">Student Phone Number:</label>
+                                <input type="tel" id="newStudentPhone" class="input-field" value="${newStudentPhone}" placeholder="e.g., 555-123-4567" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
+                            </div>
+                            <div class="form-group lg:col-span-2">
+                                <label for="newParentName" class="label">Parent/Guardian Name:</label>
+                                <input type="text" id="newParentName" class="input-field" value="${newParentName}" placeholder="e.g., Jane Doe">
+                            </div>
+                            <div class="form-group lg:col-span-2">
+                                <label for="newParentPhone" class="label">Parent/Guardian Phone Number:</label>
+                                <input type="tel" id="newParentPhone" class="input-field" value="${newParentPhone}" placeholder="e.g., 555-987-6543" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="label">Tumbling Skills:</label>
+                            ${tumblingSkillsOptions.map(levelGroup => `
+                                <h4 class="font-semibold text-gray-700 mt-4 mb-2">${levelGroup.level}</h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    ${levelGroup.skills.map(skill => {
+                                        const currentProficiency = newTumblingSkillProficiencies.find(item => item.skill === skill)?.proficiency || "";
+                                        return `
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-gray-700 text-sm w-1/2">${skill}:</span>
+                                                <select class="input-field text-sm py-1 px-2 w-1/2" data-skill="${skill}" data-skill-type="new-tumbling">
+                                                    <option value="">Select proficiency</option>
+                                                    ${proficiencyLevels.map(level => `
+                                                        <option value="${level}" ${currentProficiency === level ? 'selected' : ''}>${level}</option>
+                                                    `).join('')}
+                                                </select>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="form-group">
+                            <label class="label">Flying Skills:</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mt-4 mb-2">Lt Leg Skills</h4>
+                                    <div class="grid grid-cols-1 gap-2">
+                                        ${flyingSkillsOptions["Lt Leg Skills"].map(skill => {
+                                            const currentProficiency = newFlyingSkillProficiencies.find(item => item.skill === skill)?.proficiency || "";
+                                            return `
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-gray-700 text-sm w-1/2">${skill}:</span>
+                                                    <select class="input-field text-sm py-1 px-2 w-1/2" data-skill="${skill}" data-skill-type="new-flying">
+                                                        <option value="">Select proficiency</option>
+                                                        ${flyingProficiencyLevels.map(level => `
+                                                            <option value="${level}" ${currentProficiency === level ? 'selected' : ''}>${level}</option>
+                                                        `).join('')}
+                                                    </select>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mt-4 mb-2">Rt Leg Skills</h4>
+                                    <div class="grid grid-cols-1 gap-2">
+                                        ${flyingSkillsOptions["Rt Leg Skills"].map(skill => {
+                                            const currentProficiency = newFlyingSkillProficiencies.find(item => item.skill === skill)?.proficiency || "";
+                                            return `
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-gray-700 text-sm w-1/2">${skill}:</span>
+                                                    <select class="input-field text-sm py-1 px-2 w-1/2" data-skill="${skill}" data-skill-type="new-flying">
+                                                        <option value="">Select proficiency</option>
+                                                        ${flyingProficiencyLevels.map(level => `
+                                                            <option value="${level}" ${currentProficiency === level ? 'selected' : ''}>${level}</option>
+                                                        `).join('')}
+                                                    </select>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="newGoals" class="label">Goals / Things to Learn:</label>
+                            <textarea id="newGoals" class="input-field h-24" placeholder="e.g., Master full twist, Improve flexibility">${newGoals}</textarea>
+                            <button type="button" id="suggestGoalsBtn" class="btn btn-gray mt-2 text-sm">Suggest Goals ✨</button>
+                        </div>
+                        <div class="form-group">
+                            <label class="label">Primary Focus:</label>
+                            <select id="newFocusCategory" class="input-field">
+                                ${focusCategories.map(category => `
+                                    <option value="${category.name}" ${newFocusCategory === category.name ? 'selected' : ''}>${category.name} ${category.stars}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="label">Select Color:</label>
+                            <div class="flex flex-wrap gap-2">
+                                ${predefinedColors.map((color, index) => `
+                                    <button type="button" class="color-picker-btn ${selectedColor === color ? 'selected' : ''}" style="background-color: ${color};" data-color="${color}" title="${color}"></button>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="label">Assign Days and Times:</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                ${daysOfWeek.map(day => {
+                                    const isDaySelected = selectedDaysForNewStudent.some(item => item.day === day);
+                                    const currentAssignment = selectedDaysForNewStudent.find(item => item.day === day) || { startTime: '8:00 AM', endTime: '8:30 AM' };
+                                    return `
+                                        <div class="flex flex-col p-2 border border-gray-200 rounded-lg">
+                                            <label class="inline-flex items-center cursor-pointer mb-2">
+                                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded" ${isDaySelected ? 'checked' : ''} data-day="${day}">
+                                                <span class="ml-2 text-gray-700 font-medium">${day}</span>
+                                            </label>
+                                            ${isDaySelected ? `
+                                                <div class="flex gap-2">
+                                                    <select class="input-field text-sm py-1 px-2" data-day-time-type="startTime" data-day="${day}">
+                                                        ${timeOptions.map(optionTime => `
+                                                            <option value="${optionTime}" ${currentAssignment.startTime === optionTime ? 'selected' : ''}>${optionTime}</option>
+                                                        `).join('')}
+                                                    </select>
+                                                    <select class="input-field text-sm py-1 px-2" data-day-time-type="endTime" data-day="${day}">
+                                                        ${timeOptions.map(optionTime => `
+                                                            <option value="${optionTime}" ${currentAssignment.endTime === optionTime ? 'selected' : ''}>${optionTime}</option>
+                                                        `).join('')}
+                                                    </select>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-blue flex-1">Add Student</button>
+                            <button type="button" id="generateNewLessonPlanBtn" class="btn btn-green flex-1">Generate Lesson Plan ✨</button>
+                        </div>
+                    </form>
+
+                    <!-- Edit Student Form (Conditional Rendering) -->
+                    ${editingStudentId ? `
+                        <form id="edit-student-form-${editingStudentId}" class="mb-8 p-4 border border-blue-300 rounded-lg bg-blue-50">
+                            <h2 class="text-2xl font-semibold text-blue-800 mb-4">Edit Student: ${editingStudentFirstName} ${editingStudentLastName}</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div class="form-group lg:col-span-1">
+                                    <label for="editStudentFirstName" class="label">First Name:</label>
+                                    <input type="text" id="editStudentFirstName" class="input-field" value="${editingStudentFirstName}" data-edit-field="firstName" required>
+                                </div>
+                                <div class="form-group lg:col-span-1">
+                                    <label for="editStudentLastName" class="label">Last Name:</label>
+                                    <input type="text" id="editStudentLastName" class="input-field" value="${editingStudentLastName}" data-edit-field="lastName" required>
+                                </div>
+                                <div class="form-group lg:col-span-2">
+                                    <label for="editStudentPhone" class="label">Student Phone Number:</label>
+                                    <input type="tel" id="editStudentPhone" class="input-field" value="${editingStudentPhone}" data-edit-field="studentPhone" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
+                                </div>
+                                <div class="form-group lg:col-span-2">
+                                    <label for="editParentName" class="label">Parent/Guardian Name:</label>
+                                    <input type="text" id="editParentName" class="input-field" value="${editingParentName}" data-edit-field="parentName">
+                                </div>
+                                <div class="form-group lg:col-span-2">
+                                    <label for="editParentPhone" class="label">Parent/Guardian Phone Number:</label>
+                                    <input type="tel" id="editParentPhone" class="input-field" value="${editingParentPhone}" data-edit-field="parentPhone" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="label">Tumbling Skills:</label>
+                                ${tumblingSkillsOptions.map(levelGroup => `
+                                    <h4 class="font-semibold text-gray-700 mt-4 mb-2">${levelGroup.level}</h4>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        ${levelGroup.skills.map(skill => {
+                                            const currentProficiency = editingTumblingSkillProficiencies.find(item => item.skill === skill)?.proficiency || "";
+                                            return `
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-gray-700 text-sm w-1/2">${skill}:</span>
+                                                    <select class="input-field text-sm py-1 px-2 w-1/2" data-skill="${skill}" data-skill-type="edit-tumbling" data-student-id="${editingStudentId}">
+                                                        <option value="">Select proficiency</option>
+                                                        ${proficiencyLevels.map(level => `
+                                                            <option value="${level}" ${currentProficiency === level ? 'selected' : ''}>${level}</option>
+                                                        `).join('')}
+                                                    </select>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="form-group">
+                                <label class="label">Flying Skills:</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 class="font-semibold text-gray-700 mt-4 mb-2">Lt Leg Skills</h4>
+                                        <div class="grid grid-cols-1 gap-2">
+                                            ${flyingSkillsOptions["Lt Leg Skills"].map(skill => {
+                                                const currentProficiency = editingFlyingSkillProficiencies.find(item => item.skill === skill)?.proficiency || "";
+                                                return `
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-gray-700 text-sm w-1/2">${skill}:</span>
+                                                        <select class="input-field text-sm py-1 px-2 w-1/2" data-skill="${skill}" data-skill-type="edit-flying" data-student-id="${editingStudentId}">
+                                                            <option value="">Select proficiency</option>
+                                                            ${flyingProficiencyLevels.map(level => `
+                                                                <option value="${level}" ${currentProficiency === level ? 'selected' : ''}>${level}</option>
+                                                            `).join('')}
+                                                        </select>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-700 mt-4 mb-2">Rt Leg Skills</h4>
+                                        <div class="grid grid-cols-1 gap-2">
+                                            ${flyingSkillsOptions["Rt Leg Skills"].map(skill => {
+                                                const currentProficiency = editingFlyingSkillProficiencies.find(item => item.skill === skill)?.proficiency || "";
+                                                return `
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-gray-700 text-sm w-1/2">${skill}:</span>
+                                                        <select class="input-field text-sm py-1 px-2 w-1/2" data-skill="${skill}" data-skill-type="edit-flying" data-student-id="${editingStudentId}">
+                                                            <option value="">Select proficiency</option>
+                                                            ${flyingProficiencyLevels.map(level => `
+                                                                <option value="${level}" ${currentProficiency === level ? 'selected' : ''}>${level}</option>
+                                                            `).join('')}
+                                                        </select>
+                                                    </div>
+                                                `;
+                                            }).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="editGoals" class="label">Goals / Things to Learn:</label>
+                                <textarea id="editGoals" class="input-field h-24" data-edit-field="goals">${editingGoals}</textarea>
+                                <button type="button" id="suggestEditGoalsBtn" class="btn btn-gray mt-2 text-sm" data-student-id="${editingStudentId}">Suggest Goals ✨</button>
+                            </div>
+                            <div class="form-group">
+                                <label class="label">Primary Focus:</label>
+                                <select id="editFocusCategory" class="input-field" data-edit-field="focusCategory">
+                                    ${focusCategories.map(category => `
+                                        <option value="${category.name}" ${editingFocusCategory === category.name ? 'selected' : ''}>${category.name} ${category.stars}</option>
+                                    `).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="label">Select Color:</label>
+                                <div class="flex flex-wrap gap-2">
+                                    ${predefinedColors.map((color, index) => `
+                                        <button type="button" class="color-picker-btn ${editingStudentColor === color ? 'selected' : ''}" style="background-color: ${color};" data-color="${color}" data-edit-color="${editingStudentId}" title="${color}"></button>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="label">Assign Days and Times:</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    ${daysOfWeek.map(day => {
+                                        const isDaySelected = editingStudentDays.some(item => item.day === day);
+                                        const currentAssignment = editingStudentDays.find(item => item.day === day) || { startTime: '8:00 AM', endTime: '8:30 AM' };
+                                        return `
+                                            <div class="flex flex-col p-2 border border-gray-200 rounded-lg">
+                                                <label class="inline-flex items-center cursor-pointer mb-2">
+                                                    <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded" ${isDaySelected ? 'checked' : ''} data-day="${day}" data-edit-day="${editingStudentId}">
+                                                    <span class="ml-2 text-gray-700 font-medium">${day}</span>
+                                                </label>
+                                                ${isDaySelected ? `
+                                                    <div class="flex gap-2">
+                                                        <select class="input-field text-sm py-1 px-2" data-day-time-type="startTime" data-day="${day}" data-edit-day="${editingStudentId}">
+                                                            ${timeOptions.map(optionTime => `
+                                                                <option value="${optionTime}" ${currentAssignment.startTime === optionTime ? 'selected' : ''}>${optionTime}</option>
+                                                            `).join('')}
+                                                        </select>
+                                                        <select class="input-field text-sm py-1 px-2" data-day-time-type="endTime" data-day="${day}" data-edit-day="${editingStudentId}">
+                                                            ${timeOptions.map(optionTime => `
+                                                                <option value="${optionTime}" ${currentAssignment.endTime === optionTime ? 'selected' : ''}>${optionTime}</option>
+                                                            `).join('')}
+                                                        </select>
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                            <div class="flex gap-2 mt-6">
+                                <button type="submit" class="btn btn-green flex-1">Save Changes</button>
+                                <button type="button" class="btn btn-gray flex-1" data-cancel-edit="${editingStudentId}">Cancel</button>
+                                <button type="button" id="generateEditLessonPlanBtn" class="btn btn-blue flex-1" data-student-id="${editingStudentId}">Generate Lesson Plan ✨</button>
+                            </div>
+                        </form>
+                    ` : ''}
+
+
+                    <div class="mb-8 p-4 border border-gray-200 rounded-lg">
+                        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Current Students</h2>
+                        ${students.length === 0 ? `
+                            <p class="text-gray-500">No students added yet. Use the form above to add your first student!</p>
+                        ` : `
+                            <ul class="space-y-3">
+                                <li class="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 bg-gray-50 rounded-lg shadow-sm">
+                                    <div class="flex flex-col items-start mb-2 sm:mb-0 w-full">
+                                        <div class="font-semibold text-lg text-gray-800 w-full mb-2">Student List</div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+                                            ${students.map(student => `
+                                                <div class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-between" style="border-left: 5px solid ${student.color};">
+                                                    <div>
+                                                        <span class="font-bold text-lg cursor-pointer" style="color: ${student.color};" data-toggle-details="${student.id}">
+                                                            ${student.firstName} ${student.lastName} ${getStarsForCategory(student.focusCategory)}
+                                                        </span>
+                                                        ${expandedStudentId === student.id ? `
+                                                            <div class="text-gray-600 text-sm mt-1">
+                                                                <p><strong>Student:</strong> ${student.firstName} ${student.lastName} ${student.studentPhone ? `(${student.studentPhone})` : ''}</p>
+                                                                ${student.parentName ? `<p><strong>Parent:</strong> ${student.parentName} ${student.parentPhone ? `(${student.parentPhone})` : ''}</p>` : ''}
+                                                                ${student.tumblingSkillProficiencies && student.tumblingSkillProficiencies.length > 0 ?
+                                                                    `<p class="font-semibold mt-2">Tumbling Skills:</p>` +
+                                                                    tumblingSkillsOptions.map(levelGroup => {
+                                                                        const skillsInLevel = student.tumblingSkillProficiencies.filter(ts => levelGroup.skills.includes(ts.skill));
+                                                                        if (skillsInLevel.length > 0) {
+                                                                            return `
+                                                                                <p class="ml-2 font-medium">${levelGroup.level}:</p>
+                                                                                ${skillsInLevel.map(ts => `<p class="ml-4">- ${ts.skill}: ${ts.proficiency}</p>`).join('')}
+                                                                            `;
+                                                                        }
+                                                                        return '';
+                                                                    }).join('')
+                                                                : ''}
+                                                                ${student.flyingSkillProficiencies && student.flyingSkillProficiencies.length > 0 ?
+                                                                    `<p class="font-semibold mt-2">Flying Skills:</p>` +
+                                                                    Object.keys(flyingSkillsOptions).map(legGroup => {
+                                                                        const skillsInLeg = student.flyingSkillProficiencies.filter(fs => flyingSkillsOptions[legGroup].includes(fs.skill));
+                                                                        if (skillsInLeg.length > 0) {
+                                                                            return `
+                                                                                <p class="ml-2 font-medium">${legGroup}:</p>
+                                                                                ${skillsInLeg.map(fs => `<p class="ml-4">- ${fs.skill}: ${fs.proficiency}</p>`).join('')}
+                                                                            `;
+                                                                        }
+                                                                        return '';
+                                                                    }).join('')
+                                                                : ''}
+                                                                ${student.goals ? `<p><strong>Goals:</strong> ${student.goals}</p>` : ''}
+                                                                ${(student.assignedDays || []).length > 0 ?
+                                                                    `<p class="font-semibold mt-2">Assigned Days:</p>` +
+                                                                    student.assignedDays.map(assignment => `
+                                                                        <p class="ml-2">${assignment.day}: ${assignment.startTime || 'Not set'} - ${assignment.endTime || 'Not set'}</p>
+                                                                    `).join('')
+                                                                : `<p>No days assigned</p>`}
+                                                            </div>
+                                                        ` : ''}
+                                                    </div>
+                                                    <div class="flex gap-2 mt-4">
+                                                        <button type="button" class="btn btn-yellow text-sm flex-1" data-edit-student="${student.id}">Edit</button>
+                                                        <button type="button" class="btn btn-red text-sm flex-1" data-delete-student="${student.id}">Delete</button>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        `}
+                    </div>
+
+                    <div class="p-4 border border-gray-200 rounded-lg">
+                        <h2 class="text-2xl font-semibold text-gray-700 mb-4 text-center">Weekly Planner</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+                            ${daysOfWeek.map(day => `
+                                <div class="calendar-day">
+                                    <h3>${day}</h3>
+                                    <ul class="list-none p-0 m-0 text-center">
+                                        ${students.filter(student =>
+                                            (student.assignedDays || []).some(assignment => assignment.day === day)
+                                        ).map(student => {
+                                            const assignment = student.assignedDays.find(item => item.day === day);
+                                            return `
+                                                <li class="student-item" style="color: ${student.color};">
+                                                    ${student.firstName} ${student.lastName} ${getStarsForCategory(student.focusCategory)}
+                                                    ${assignment && assignment.startTime && assignment.endTime ? `<span class="student-time">${assignment.startTime} - ${assignment.endTime}</span>` : ''}
+                                                </li>
+                                            `;
+                                        }).join('')}
+                                    </ul>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- General Modal for messages -->
+                    ${showModal ? `
+                        <div class="modal">
+                            <div class="modal-content">
+                                <h3>${modalMessage.includes('Error') ? 'Error' : 'Notification'}</h3>
+                                <p>${modalMessage}</p>
+                                <button type="button" class="btn btn-blue" onclick="closeCustomModal()">OK</button>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- LLM Output Modal -->
+                    ${showLlmOutputModalState ? `
+                        <div class="modal">
+                            <div class="modal-content max-w-2xl text-left">
+                                ${llmOutputModalMessage}
+                                <button type="button" class="btn btn-blue mt-4" onclick="hideLlmOutputModal()">Close</button>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- LLM Loading Spinner Modal -->
+                    ${isLoadingLLM ? `
+                        <div class="modal">
+                            <div class="modal-content flex flex-col items-center justify-center">
+                                <div class="loading-spinner"></div>
+                                <p class="mt-4 text-lg text-gray-700">Generating content...</p>
+                                <p class="text-sm text-gray-500 mt-2">This may take a moment.</p>
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+            }
+
+            appDiv.innerHTML = htmlContent;
+
+            // --- Attach Event Listeners (MUST be done after innerHTML update) ---
+            if (isAuthReady) {
+                // Auth Form
+                const loginEmailInput = document.getElementById('loginEmail');
+                const loginPasswordInput = document.getElementById('loginPassword');
+                const signInBtn = document.getElementById('signInBtn');
+                const signUpBtn = document.getElementById('signUpBtn');
+                const signOutBtn = document.getElementById('signOutBtn');
+
+                if (loginEmailInput) loginEmailInput.oninput = (e) => { loginEmail = e.target.value; };
+                if (loginPasswordInput) loginPasswordInput.oninput = (e) => { loginPassword = e.target.value; };
+                if (signInBtn) signInBtn.onclick = handleSignIn;
+                if (signUpBtn) signUpBtn.onclick = handleSignUp;
+                if (signOutBtn) signOutBtn.onclick = handleSignOut;
+
+
+                // Add Student Form
+                const addForm = document.getElementById('add-student-form');
+                if (addForm) {
+                    addForm.onsubmit = handleAddStudent;
+
+                    document.getElementById('newStudentFirstName').oninput = (e) => { newStudentFirstName = e.target.value; };
+                    document.getElementById('newStudentLastName').oninput = (e) => { newStudentLastName = e.target.value; };
+                    document.getElementById('newParentName').oninput = (e) => { newParentName = e.target.value; };
+
+                    const newStudentPhoneInput = document.getElementById('newStudentPhone');
+                    newStudentPhoneInput.oninput = (e) => {
+                        e.target.value = formatPhoneNumber(e.target.value);
+                        newStudentPhone = e.target.value;
+                    };
+                    const newParentPhoneInput = document.getElementById('newParentPhone');
+                    newParentPhoneInput.oninput = (e) => {
+                        e.target.value = formatPhoneNumber(e.target.value);
+                        newParentPhone = e.target.value;
+                    };
+
+                    document.getElementById('newGoals').oninput = (e) => { newGoals = e.target.value; };
+                    document.getElementById('newFocusCategory').onchange = (e) => { newFocusCategory = e.target.value; };
+
+                    // LLM Buttons for Add Form
+                    const suggestGoalsBtn = document.getElementById('suggestGoalsBtn');
+                    if (suggestGoalsBtn) suggestGoalsBtn.onclick = () => suggestGoals(false);
+                    const generateNewLessonPlanBtn = document.getElementById('generateNewLessonPlanBtn');
+                    if (generateNewLessonPlanBtn) generateNewLessonPlanBtn.onclick = () => generateLessonPlan(false);
+
+
+                    appDiv.querySelectorAll('#add-student-form select[data-skill-type="new-tumbling"]').forEach(select => {
+                        select.onchange = (e) => { handleTumblingSkillChange(e.target.dataset.skill, e.target.value, false); };
+                        const currentSkillProficiency = newTumblingSkillProficiencies.find(item => item.skill === select.dataset.skill);
+                        if (currentSkillProficiency) { select.value = currentSkillProficiency.proficiency; } else { select.value = ""; }
+                    });
+
+                    appDiv.querySelectorAll('#add-student-form select[data-skill-type="new-flying"]').forEach(select => {
+                        select.onchange = (e) => { handleFlyingSkillChange(e.target.dataset.skill, e.target.value, false); };
+                        const currentSkillProficiency = newFlyingSkillProficiencies.find(item => item.skill === select.dataset.skill);
+                        if (currentSkillProficiency) { select.value = currentSkillProficiency.proficiency; } else { select.value = ""; }
+                    });
+
+                    appDiv.querySelectorAll('.color-picker-btn').forEach(button => {
+                        button.onclick = (e) => { selectedColor = e.target.dataset.color; renderApp(); };
+                    });
+
+                    appDiv.querySelectorAll('#add-student-form input[type="checkbox"]').forEach(checkbox => {
+                        checkbox.onchange = (e) => { toggleDayForNewStudent(e.target.dataset.day); };
+                    });
+
+                    appDiv.querySelectorAll('#add-student-form select[data-day-time-type]').forEach(select => {
+                        select.onchange = (e) => { handleTimeChangeForNewStudent(e.target.dataset.day, e.target.dataset.dayTimeType, e.target.value); };
+                    });
+                }
+
+                // Toggle details for existing students
+                appDiv.querySelectorAll('[data-toggle-details]').forEach(element => {
+                    element.onclick = (e) => { toggleStudentDetails(e.target.dataset.toggleDetails); };
+                });
+
+                // Edit/Delete Buttons for Existing Students
+                appDiv.querySelectorAll('[data-edit-student]').forEach(button => {
+                    button.onclick = () => {
+                        const studentId = button.dataset.editStudent;
+                        const studentToEdit = students.find(s => s.id === studentId);
+                        if (studentToEdit) { startEditing(studentToEdit); }
+                    };
+                });
+
+                appDiv.querySelectorAll('[data-delete-student]').forEach(button => {
+                    button.onclick = () => {
+                        const studentId = button.dataset.deleteStudent;
+                        handleDeleteStudent(studentId);
+                    };
+                });
+
+                // Edit Student Forms (dynamically attached)
+                if (editingStudentId) {
+                    const editForm = document.getElementById(`edit-student-form-${editingStudentId}`);
+                    if (editForm) {
+                        editForm.onsubmit = handleUpdateStudent;
+
+                        editForm.querySelector(`[data-edit-field="firstName"]`).oninput = (e) => { editingStudentFirstName = e.target.value; };
+                        editForm.querySelector(`[data-edit-field="lastName"]`).oninput = (e) => { editingStudentLastName = e.target.value; };
+                        editForm.querySelector(`[data-edit-field="parentName"]`).oninput = (e) => { editingParentName = e.target.value; };
+
+                        const editStudentPhoneInput = editForm.querySelector(`[data-edit-field="studentPhone"]`);
+                        editStudentPhoneInput.oninput = (e) => {
+                            e.target.value = formatPhoneNumber(e.target.value);
+                            editingStudentPhone = e.target.value;
+                        };
+                        const editParentPhoneInput = editForm.querySelector(`[data-edit-field="parentPhone"]`);
+                        editParentPhoneInput.oninput = (e) => {
+                            e.target.value = formatPhoneNumber(e.target.value);
+                            editingParentPhone = e.target.value;
+                        };
+
+                        editForm.querySelector(`[data-edit-field="goals"]`).oninput = (e) => { editingGoals = e.target.value; };
+                        editForm.querySelector(`[data-edit-field="focusCategory"]`).onchange = (e) => { editingFocusCategory = e.target.value; };
+
+                        // LLM Buttons for Edit Form
+                        const suggestEditGoalsBtn = document.getElementById('suggestEditGoalsBtn');
+                        if (suggestEditGoalsBtn) suggestEditGoalsBtn.onclick = () => suggestGoals(true);
+                        const generateEditLessonPlanBtn = document.getElementById('generateEditLessonPlanBtn');
+                        if (generateEditLessonPlanBtn) generateEditLessonPlanBtn.onclick = () => generateLessonPlan(true);
+
+
+                        editForm.querySelectorAll(`select[data-skill-type="edit-tumbling"][data-student-id="${editingStudentId}"]`).forEach(select => {
+                            select.onchange = (e) => { handleTumblingSkillChange(e.target.dataset.skill, e.target.value, true); };
+                            const currentSkillProficiency = editingTumblingSkillProficiencies.find(item => item.skill === select.dataset.skill);
+                            if (currentSkillProficiency) { select.value = currentSkillProficiency.proficiency; } else { select.value = ""; }
+                        });
+
+                        editForm.querySelectorAll(`select[data-skill-type="edit-flying"][data-student-id="${editingStudentId}"]`).forEach(select => {
+                            select.onchange = (e) => { handleFlyingSkillChange(e.target.dataset.skill, e.target.value, true); };
+                            const currentSkillProficiency = editingFlyingSkillProficiencies.find(item => item.skill === select.dataset.skill);
+                            if (currentSkillProficiency) { select.value = currentSkillProficiency.proficiency; } else { select.value = ""; }
+                        });
+
+                        editForm.querySelectorAll(`[data-edit-color="${editingStudentId}"]`).forEach(button => {
+                            button.onclick = (e) => { editingStudentColor = e.target.dataset.color; renderApp(); };
+                        });
+
+                        editForm.querySelectorAll(`input[type="checkbox"][data-edit-day="${editingStudentId}"]`).forEach(checkbox => {
+                            checkbox.onchange = (e) => { toggleDayForEditingStudent(e.target.dataset.day); };
+                        });
+
+                        editForm.querySelectorAll(`select[data-edit-day-time-type][data-edit-day="${editingStudentId}"]`).forEach(select => {
+                            select.onchange = (e) => { handleTimeChangeForEditingStudent(e.target.dataset.day, e.target.dataset.dayTimeType, e.target.value); };
+                        });
+
+                        const cancelEditButton = editForm.querySelector(`[data-cancel-edit="${editingStudentId}"]`);
+                        if (cancelEditButton) {
+                            cancelEditButton.onclick = () => {
+                                editingStudentId = null;
+                                editingStudentFirstName = '';
+                                editingStudentLastName = '';
+                                editingParentName = '';
+                                editingStudentPhone = '';
+                                editingParentPhone = '';
+                                editingTumblingSkillProficiencies = [];
+                                editingFlyingSkillProficiencies = [];
+                                editingGoals = '';
+                                editingFocusCategory = '';
+                                editingStudentColor = '';
+                                editingStudentDays = [];
+                                renderApp();
+                            };
+                        }
+                    }
+                }
+            }
+
+            if (showModal) {
+                const modalButton = appDiv.querySelector('.modal button');
+                if (modalButton) { modalButton.onclick = closeCustomModal; }
+            }
+            // Updated function calls for LLM output modal
+            if (showLlmOutputModalState) {
+                const llmModalButton = appDiv.querySelector('.modal button');
+                if (llmModalButton) { llmModalButton.onclick = hideLlmOutputModal; }
+            }
+        }
+
+        // --- Initial Load ---
+        window.onload = () => {
+            initializeFirebaseAndAuth();
+            renderApp();
+        };
+    </script>
+</body>
+</html>
