@@ -341,6 +341,10 @@
         let llmOutputModalMessage = ''; // New: For LLM output modal
         let showLlmOutputModalState = false; // Renamed to avoid conflict with function name
 
+        // New state for pending submissions
+        let pendingSubmissions = [];
+        let submissionShareLink = ''; // To store the generated shareable link
+
         // Utility function to escape characters that could break HTML or JavaScript contexts
         function escapeTemplateLiteral(str) {
             if (typeof str !== 'string') return str;
@@ -357,7 +361,7 @@
             apiKey: "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA",
             authDomain: "private-lessons-ab22f.firebaseapp.com",
             projectId: "private-lessons-ab22f",
-            storageBucket: "private-lessons-ab22f.firebasestorage.app",
+            storageBucket: "private-lessons-ab22f.firebaseapp.com",
             messagingSenderId: "21096957752",
             appId: "1:21096957752:web:0cf6a8d3556b40cb57a3cd",
             measurementId: "G-JMKM2MM8DN"
@@ -614,7 +618,7 @@
                         console.log("Auth state changed: Anonymous User ID set.");
                     }
                     isAuthReady = true;
-                    setupFirestoreListener(); // Setup listener once auth is ready
+                    setupFirestoreListeners(); // Setup ALL listeners once auth is ready
                     renderApp(); // Initial render after auth is ready
                 });
 
@@ -697,8 +701,8 @@
             }
         }
 
-        // --- Firestore Data Listener ---
-        function setupFirestoreListener() {
+        // --- Firestore Data Listeners ---
+        function setupFirestoreListeners() {
             if (!isAuthReady || !db || !userId) {
                 console.log("Skipping Firestore listener setup: Auth not ready or userId not available.");
                 return;
@@ -707,6 +711,7 @@
             console.log("Setting up Firestore listener for userId:", userId);
             const studentsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/students`);
 
+            // Listener for existing students
             onSnapshot(studentsCollectionRef, (snapshot) => {
                 students = snapshot.docs.map(doc => {
                     const data = doc.data();
@@ -767,6 +772,20 @@
                 console.error("Error fetching students:", error);
                 showCustomModal(`Error loading students: ${escapeTemplateLiteral(error.message)}`);
             });
+
+            // Listener for pending submissions
+            const pendingSubmissionsCollectionRef = collection(db, `artifacts/${appId}/public/submissions/${userId}/pendingStudents`);
+            onSnapshot(pendingSubmissionsCollectionRef, (snapshot) => {
+                pendingSubmissions = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                console.log("Pending submissions fetched:", pendingSubmissions);
+                renderApp();
+            }, (error) => {
+                console.error("Error fetching pending submissions:", error);
+                showCustomModal(`Error loading pending submissions: ${escapeTemplateLiteral(error.message)}`);
+            });
         }
 
         // --- LLM Integration Functions ---
@@ -807,12 +826,6 @@
                 renderApp(); // Hide loading spinner
             }
         }
-
-        // Removed suggestGoals function as per user request
-        // async function suggestGoals(isEditing) { ... }
-
-        // Removed generateLessonPlan function as per user request
-        // async function generateLessonPlan(isEditing) { ... }
 
         // --- Event Handlers for Student Data ---
         async function handleAddStudent(event) {
@@ -1066,6 +1079,92 @@
             renderApp();
         }
 
+        // --- New: Submission Link and Pending Submissions Logic ---
+        function generateShareLink() {
+            if (!userId) {
+                showCustomModal("Please sign in to generate a shareable link.");
+                return;
+            }
+            // Assumes submission.html is in the same directory as index.html
+            // If your GitHub Pages URL is like `https://username.github.io/repo-name/`,
+            // then `window.location.origin` will be `https://username.github.io`
+            // and `window.location.pathname` will be `/repo-name/index.html`.
+            // We need to construct the path to submission.html correctly.
+            const baseUrl = window.location.origin;
+            const pathSegments = window.location.pathname.split('/');
+            // Find the repository name part if it's a project page
+            // e.g., /repo-name/index.html -> /repo-name/
+            // e.g., /index.html -> /
+            let repoPath = '';
+            if (pathSegments.length > 1 && pathSegments[1] !== '') {
+                // If it's a project page, the second segment is usually the repo name
+                repoPath = `/${pathSegments[1]}/`;
+            }
+
+            // Construct the full URL to submission.html
+            const submissionPagePath = `${repoPath}submission.html`;
+            submissionShareLink = `${baseUrl}${submissionPagePath}?ownerId=${userId}`;
+            renderApp(); // Re-render to display the link
+
+            // Automatically copy to clipboard
+            copyShareLinkToClipboard();
+        }
+
+        function copyShareLinkToClipboard() {
+            const linkInput = document.getElementById('submissionShareLinkInput');
+            if (linkInput) {
+                linkInput.select();
+                linkInput.setSelectionRange(0, 99999); // For mobile devices
+                document.execCommand('copy'); // Fallback for older browsers, works in iframes
+                showCustomModal("Link copied to clipboard!");
+            } else {
+                showCustomModal("Could not find the link to copy.");
+            }
+        }
+
+        async function handleApproveSubmission(submission) {
+            try {
+                // 1. Add to main students collection
+                const newStudentData = {
+                    firstName: submission.firstName || '',
+                    lastName: submission.lastName || '',
+                    parentName: submission.parentName || '',
+                    studentPhone: submission.studentPhone || '',
+                    parentPhone: submission.parentPhone || '',
+                    goals: submission.goals || '',
+                    // Default values for skills and focus category as they are not in submission form
+                    tumblingSkillProficiencies: [],
+                    flyingSkillProficiencies: [],
+                    focusCategory: focusCategories[0].name,
+                    color: predefinedColors[0], // Assign a default color
+                    assignedDays: [] // No assigned days from submission form
+                };
+                const studentsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/students`);
+                await addDoc(studentsCollectionRef, newStudentData);
+
+                // 2. Delete from pending submissions
+                const pendingSubmissionDocRef = doc(db, `artifacts/${appId}/public/submissions/${userId}/pendingStudents`, submission.id);
+                await deleteDoc(pendingSubmissionDocRef);
+
+                showCustomModal(`${submission.firstName} ${submission.lastName} approved and added to your students!`);
+            } catch (error) {
+                console.error("Error approving submission:", error);
+                showCustomModal(`Error approving submission: ${escapeTemplateLiteral(error.message)}`);
+            }
+        }
+
+        async function handleRejectSubmission(submissionId) {
+            try {
+                const pendingSubmissionDocRef = doc(db, `artifacts/${appId}/public/submissions/${userId}/pendingStudents`, submissionId);
+                await deleteDoc(pendingSubmissionDocRef);
+                showCustomModal("Submission rejected and removed.");
+            } catch (error) {
+                console.error("Error rejecting submission:", error);
+                showCustomModal(`Error rejecting submission: ${escapeTemplateLiteral(error.message)}`);
+            }
+        }
+
+
         // --- Main Render Function ---
         function renderApp() {
             const appDiv = document.getElementById('app');
@@ -1111,6 +1210,46 @@
                                 </div>
                             </form>
                         ` : ''}
+                    </div>
+
+                    <!-- Share Submission Link Section -->
+                    <div class="mb-8 p-4 border border-gray-200 rounded-lg bg-blue-50">
+                        <h2 class="text-2xl font-semibold text-blue-800 mb-4">Share Student Submission Form</h2>
+                        <p class="text-gray-700 mb-4">Click the button below to generate a shareable link for parents/students to submit their information directly to your planner.</p>
+                        <button type="button" id="generateShareLinkBtn" class="btn btn-blue mb-4">Generate Shareable Link</button>
+                        ${submissionShareLink ? `
+                            <div class="form-group flex items-center gap-2">
+                                <input type="text" id="submissionShareLinkInput" class="input-field flex-grow" value="${escapeTemplateLiteral(submissionShareLink)}" readonly>
+                                <button type="button" id="copyShareLinkBtn" class="btn btn-green px-4 py-2">Copy</button>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-2">Share this link with your students/parents!</p>
+                        ` : ''}
+                    </div>
+
+                    <!-- Pending Student Submissions -->
+                    <div class="mb-8 p-4 border border-yellow-300 rounded-lg bg-yellow-50">
+                        <h2 class="text-2xl font-semibold text-yellow-800 mb-4">Pending Student Submissions (${pendingSubmissions.length})</h2>
+                        ${pendingSubmissions.length === 0 ? `
+                            <p class="text-gray-700">No pending submissions at the moment.</p>
+                        ` : `
+                            <ul class="space-y-4">
+                                ${pendingSubmissions.map(submission => `
+                                    <li class="p-4 bg-white rounded-lg shadow-sm border border-yellow-200">
+                                        <p class="font-semibold text-gray-800">
+                                            ${escapeTemplateLiteral(submission.firstName)} ${escapeTemplateLiteral(submission.lastName)}
+                                            ${submission.studentPhone ? `(${escapeTemplateLiteral(submission.studentPhone)})` : ''}
+                                        </p>
+                                        ${submission.parentName ? `<p class="text-gray-600 text-sm">Parent: ${escapeTemplateLiteral(submission.parentName)} ${submission.parentPhone ? `(${escapeTemplateLiteral(submission.parentPhone)})` : ''}</p>` : ''}
+                                        ${submission.goals ? `<p class="text-gray-600 text-sm mt-1">Goals: ${escapeTemplateLiteral(submission.goals)}</p>` : ''}
+                                        <p class="text-gray-500 text-xs mt-2">Submitted: ${new Date(submission.submissionDate).toLocaleString()}</p>
+                                        <div class="flex gap-2 mt-4">
+                                            <button type="button" class="btn btn-green text-sm flex-1" data-approve-submission="${escapeTemplateLiteral(submission.id)}">Approve</button>
+                                            <button type="button" class="btn btn-red text-sm flex-1" data-reject-submission="${escapeTemplateLiteral(submission.id)}">Reject</button>
+                                        </div>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        `}
                     </div>
 
                     <!-- Add New Student Form -->
@@ -1648,6 +1787,27 @@
                 if (signUpBtn) signUpBtn.onclick = handleSignUp;
                 if (signOutBtn) signOutBtn.onclick = handleSignOut;
 
+                // Share Submission Link
+                const generateShareLinkBtn = document.getElementById('generateShareLinkBtn');
+                if (generateShareLinkBtn) {
+                    generateShareLinkBtn.onclick = generateShareLink;
+                }
+                const copyShareLinkBtn = document.getElementById('copyShareLinkBtn');
+                if (copyShareLinkBtn) {
+                    copyShareLinkBtn.onclick = copyShareLinkToClipboard;
+                }
+
+                // Pending Submissions
+                pendingSubmissions.forEach(submission => {
+                    const approveBtn = appDiv.querySelector(`[data-approve-submission="${submission.id}"]`);
+                    if (approveBtn) {
+                        approveBtn.onclick = () => handleApproveSubmission(submission);
+                    }
+                    const rejectBtn = appDiv.querySelector(`[data-reject-submission="${submission.id}"]`);
+                    if (rejectBtn) {
+                        rejectBtn.onclick = () => handleRejectSubmission(submission.id);
+                    }
+                });
 
                 // Add Student Form
                 const addForm = document.getElementById('add-student-form');
