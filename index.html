@@ -341,11 +341,14 @@
         let llmOutputModalMessage = ''; // New: For LLM output modal
         let showLlmOutputModalState = false; // Renamed to avoid conflict with function name
 
+        // Utility function to escape backticks in strings for template literals
+        function escapeTemplateLiteral(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/`/g, '\\`');
+        }
 
-        // Ensure __app_id and __firebase_config are defined in the Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        // IMPORTANT: Replace "YOUR_FIREBASE_API_KEY" with your actual Firebase Web API Key from your Firebase project settings.
-        // The Canvas environment will automatically provide a key if this is left as an empty string.
+        // IMPORTANT: Replace "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA" and "1:21096957752:web:0cf6a8d3556b40cb57a3cd"
+        // with your actual Firebase Web API Key and App ID from your Firebase project settings.
         const firebaseConfig = {
             apiKey: "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA",
             authDomain: "private-lessons-ab22f.firebaseapp.com",
@@ -354,7 +357,11 @@
             messagingSenderId: "21096957752",
             appId: "1:21096957752:web:0cf6a8d3556b40cb57a3cd",
             measurementId: "G-JMKM2MM8DN"
-        }; // Added missing closing curly brace
+        };
+
+        // Ensure __app_id is defined in the Canvas environment.
+        // For deployed versions, use the appId from firebaseConfig if __app_id is not available.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.appId;
 
         console.log("Firebase Config being used:", firebaseConfig);
 
@@ -601,7 +608,7 @@
                             `Authentication failed: The provided custom token is invalid. ` +
                             `The app will attempt to sign in anonymously to proceed. ` +
                             `You can still use the planner, but data will be tied to an anonymous user ID. ` +
-                            `(Error: ${authError.message})`
+                            `(Error: ${escapeTemplateLiteral(authError.message)})`
                         );
                         await signInAnonymously(auth); // Fallback to anonymous
                         console.log("Signed in anonymously after custom token mismatch.");
@@ -617,7 +624,7 @@
 
             } catch (overallError) {
                 console.error("Overall Firebase initialization error:", overallError);
-                showCustomModal(`Firebase setup error: ${overallError.message}`);
+                showCustomModal(`Firebase setup error: ${escapeTemplateLiteral(overallError.message)}`);
                 isAuthReady = true;
                 renderApp();
             }
@@ -637,7 +644,7 @@
                 loginPassword = '';
             } catch (error) {
                 console.error("Error signing up:", error);
-                showCustomModal(`Sign up failed: ${error.message}`);
+                showCustomModal(`Sign up failed: ${escapeTemplateLiteral(error.message)}`);
             }
         }
 
@@ -654,7 +661,7 @@
                 loginPassword = '';
             } catch (error) {
                 console.error("Error signing in:", error);
-                showCustomModal(`Sign in failed: ${error.message}`);
+                showCustomModal(`Sign in failed: ${escapeTemplateLiteral(error.message)}`);
             }
         }
 
@@ -665,7 +672,7 @@
                 // After sign out, onAuthStateChanged will trigger, setting userId to a new anonymous ID
             } catch (error) {
                 console.error("Error signing out:", error);
-                showCustomModal(`Sign out failed: ${error.message}`);
+                showCustomModal(`Sign out failed: ${escapeTemplateLiteral(error.message)}`);
             }
         }
 
@@ -737,7 +744,7 @@
                 renderApp();
             }, (error) => {
                 console.error("Error fetching students:", error);
-                showCustomModal(`Error loading students: ${error.message}`);
+                showCustomModal(`Error loading students: ${escapeTemplateLiteral(error.message)}`);
             });
         }
 
@@ -772,7 +779,7 @@
                 }
             } catch (error) {
                 console.error("Error calling Gemini API:", error);
-                showCustomModal(`Error generating content: ${error.message}`);
+                showCustomModal(`Error generating content: ${escapeTemplateLiteral(error.message)}`);
                 return null;
             } finally {
                 isLoadingLLM = false;
@@ -832,7 +839,7 @@
                 renderApp();
             } catch (error) {
                 console.error("Error adding student:", error);
-                showCustomModal(`Error adding student: ${error.message}`);
+                showCustomModal(`Error adding student: ${escapeTemplateLiteral(error.message)}`);
             }
         }
 
@@ -882,7 +889,7 @@
                 renderApp();
             } catch (error) {
                 console.error("Error updating student:", error);
-                showCustomModal(`Error updating student: ${error.message}`);
+                showCustomModal(`Error updating student: ${escapeTemplateLiteral(error.message)}`);
             }
         }
 
@@ -892,7 +899,7 @@
                 await deleteDoc(studentDocRef);
             } catch (error) {
                 console.error("Error deleting student:", error);
-                showCustomModal(`Error deleting student: ${error.message}`);
+                showCustomModal(`Error deleting student: ${escapeTemplateLiteral(error.message)}`);
             }
         }
 
@@ -1058,8 +1065,8 @@
                         <h2 class="text-2xl font-semibold text-gray-700 mb-4">Authentication</h2>
                         <div class="flex items-center justify-between mb-4">
                             ${userEmail ?
-                                `<p class="text-gray-700">Logged in as: <span class="font-medium">${userEmail}</span></p>` :
-                                `<p class="text-gray-700">Currently using anonymous ID: <span class="font-mono bg-gray-100 px-2 py-1 rounded">${userId}</span></p>`
+                                `<p class="text-gray-700">Logged in as: <span class="font-medium">${escapeTemplateLiteral(userEmail)}</span></p>` :
+                                `<p class="text-gray-700">Currently using anonymous ID: <span class="font-mono bg-gray-100 px-2 py-1 rounded">${escapeTemplateLiteral(userId)}</span></p>`
                             }
                             ${userEmail ? `
                                 <button type="button" id="signOutBtn" class="btn btn-red text-sm">Sign Out</button>
@@ -1069,11 +1076,11 @@
                             <form id="auth-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="form-group">
                                     <label for="loginEmail" class="label">Email:</label>
-                                    <input type="email" id="loginEmail" class="input-field" value="${loginEmail}" placeholder="your@example.com">
+                                    <input type="email" id="loginEmail" class="input-field" value="${escapeTemplateLiteral(loginEmail)}" placeholder="your@example.com">
                                 </div>
                                 <div class="form-group">
                                     <label for="loginPassword" class="label">Password:</label>
-                                    <input type="password" id="loginPassword" class="input-field" value="${loginPassword}" placeholder="********">
+                                    <input type="password" id="loginPassword" class="input-field" value="${escapeTemplateLiteral(loginPassword)}" placeholder="********">
                                 </div>
                                 <div class="col-span-1 md:col-span-2 flex gap-4 mt-2">
                                     <button type="submit" id="signInBtn" class="btn btn-blue flex-1">Sign In</button>
@@ -1089,23 +1096,23 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div class="form-group lg:col-span-1">
                                 <label for="newStudentFirstName" class="label">First Name:</label>
-                                <input type="text" id="newStudentFirstName" class="input-field" value="${newStudentFirstName}" placeholder="e.g., Alice" required>
+                                <input type="text" id="newStudentFirstName" class="input-field" value="${escapeTemplateLiteral(newStudentFirstName)}" placeholder="e.g., Alice" required>
                             </div>
                             <div class="form-group lg:col-span-1">
                                 <label for="newStudentLastName" class="label">Last Name:</label>
-                                <input type="text" id="newStudentLastName" class="input-field" value="${newStudentLastName}" placeholder="e.g., Smith" required>
+                                <input type="text" id="newStudentLastName" class="input-field" value="${escapeTemplateLiteral(newStudentLastName)}" placeholder="e.g., Smith" required>
                             </div>
                             <div class="form-group lg:col-span-2">
                                 <label for="newStudentPhone" class="label">Student Phone Number:</label>
-                                <input type="tel" id="newStudentPhone" class="input-field" value="${newStudentPhone}" placeholder="e.g., 555-123-4567" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
+                                <input type="tel" id="newStudentPhone" class="input-field" value="${escapeTemplateLiteral(newStudentPhone)}" placeholder="e.g., 555-123-4567" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
                             </div>
                             <div class="form-group lg:col-span-2">
                                 <label for="newParentName" class="label">Parent/Guardian Name:</label>
-                                <input type="text" id="newParentName" class="input-field" value="${newParentName}" placeholder="e.g., Jane Doe">
+                                <input type="text" id="newParentName" class="input-field" value="${escapeTemplateLiteral(newParentName)}" placeholder="e.g., Jane Doe">
                             </div>
                             <div class="form-group lg:col-span-2">
                                 <label for="newParentPhone" class="label">Parent/Guardian Phone Number:</label>
-                                <input type="tel" id="newParentPhone" class="input-field" value="${newParentPhone}" placeholder="e.g., 555-987-6543" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
+                                <input type="tel" id="newParentPhone" class="input-field" value="${escapeTemplateLiteral(newParentPhone)}" placeholder="e.g., 555-987-6543" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
                             </div>
                         </div>
                         <div class="form-group">
@@ -1117,7 +1124,7 @@
                                 <span><span class="explanation-emoji">🔥</span>Hot: Mastered the skill</span>
                             </div>
                             ${tumblingSkillsOptions.map(levelGroup => `
-                                <h4 class="font-semibold text-gray-700 mt-4 mb-2">${levelGroup.level}</h4>
+                                <h4 class="font-semibold text-gray-700 mt-4 mb-2">${escapeTemplateLiteral(levelGroup.level)}</h4>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     ${levelGroup.skills.map(skill => {
                                         // Get the current numerical proficiency for this skill, default to 0 if not set
@@ -1125,15 +1132,15 @@
                                         const currentProficiencyDisplay = getTumblingProficiencyDisplay(currentProficiencyValue);
                                         return `
                                             <div class="flex flex-col items-start gap-1 p-2 border border-gray-100 rounded-md bg-white">
-                                                <span class="text-gray-700 text-sm font-medium w-full">${skill}:</span>
+                                                <span class="text-gray-700 text-sm font-medium w-full">${escapeTemplateLiteral(skill)}:</span>
                                                 <div class="temperature-gauge-container">
-                                                    <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= tumblingProficiencyMap["Perfect by themselves"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= tumblingProficiencyMap["With a little help"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${skill}" data-skill-type="new-tumbling">
+                                                    <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= tumblingProficiencyMap["Perfect by themselves"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= tumblingProficiencyMap["With a little help"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="new-tumbling">
                                                     <div class="temperature-gauge-labels w-full">
                                                         <span>Cold 🧊</span>
                                                         <span class="text-center">Warm ⭐</span>
                                                         <span class="text-right">Hot 🔥</span>
                                                     </div>
-                                                    <span class="current-proficiency-display" data-skill="${skill}" data-skill-type="new-tumbling-display">${currentProficiencyDisplay}</span>
+                                                    <span class="current-proficiency-display" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="new-tumbling-display">${escapeTemplateLiteral(currentProficiencyDisplay)}</span>
                                                 </div>
                                             </div>
                                         `;
@@ -1158,15 +1165,15 @@
                                             const currentProficiencyDisplay = getFlyingProficiencyDisplay(currentProficiencyValue);
                                             return `
                                                 <div class="flex flex-col items-start gap-1 p-2 border border-gray-100 rounded-md bg-white">
-                                                    <span class="text-gray-700 text-sm font-medium w-full">${skill}:</span>
+                                                    <span class="text-gray-700 text-sm font-medium w-full">${escapeTemplateLiteral(skill)}:</span>
                                                     <div class="temperature-gauge-container">
-                                                        <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= flyingProficiencyMap["Picture-perfect"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= flyingProficiencyMap["Needs a little work"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${skill}" data-skill-type="new-flying">
+                                                        <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= flyingProficiencyMap["Picture-perfect"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= flyingProficiencyMap["Needs a little work"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="new-flying">
                                                         <div class="temperature-gauge-labels w-full">
                                                             <span>Cold 🧊</span>
                                                             <span class="text-center">Warm ⭐</span>
                                                             <span class="text-right">Hot 🔥</span>
                                                         </div>
-                                                        <span class="current-proficiency-display" data-skill="${skill}" data-skill-type="new-flying-display">${currentProficiencyDisplay}</span>
+                                                        <span class="current-proficiency-display" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="new-flying-display">${escapeTemplateLiteral(currentProficiencyDisplay)}</span>
                                                     </div>
                                                 </div>
                                             `;
@@ -1181,15 +1188,15 @@
                                             const currentProficiencyDisplay = getFlyingProficiencyDisplay(currentProficiencyValue);
                                             return `
                                                 <div class="flex flex-col items-start gap-1 p-2 border border-gray-100 rounded-md bg-white">
-                                                    <span class="text-gray-700 text-sm font-medium w-full">${skill}:</span>
+                                                    <span class="text-gray-700 text-sm font-medium w-full">${escapeTemplateLiteral(skill)}:</span>
                                                     <div class="temperature-gauge-container">
-                                                        <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= flyingProficiencyMap["Picture-perfect"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= flyingProficiencyMap["Needs a little work"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${skill}" data-skill-type="new-flying">
+                                                        <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= flyingProficiencyMap["Picture-perfect"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= flyingProficiencyMap["Needs a little work"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="new-flying">
                                                         <div class="temperature-gauge-labels w-full">
                                                             <span>Cold 🧊</span>
                                                             <span class="text-center">Warm ⭐</span>
                                                             <span class="text-right">Hot 🔥</span>
                                                         </div>
-                                                        <span class="current-proficiency-display" data-skill="${skill}" data-skill-type="new-flying-display">${currentProficiencyDisplay}</span>
+                                                        <span class="current-proficiency-display" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="new-flying-display">${escapeTemplateLiteral(currentProficiencyDisplay)}</span>
                                                     </div>
                                                 </div>
                                             `;
@@ -1200,14 +1207,14 @@
                         </div>
                         <div class="form-group">
                             <label for="newGoals" class="label">Goals / Things to Learn:</label>
-                            <textarea id="newGoals" class="input-field h-24" placeholder="e.g., Master full twist, Improve flexibility">${newGoals}</textarea>
+                            <textarea id="newGoals" class="input-field h-24" placeholder="e.g., Master full twist, Improve flexibility">${escapeTemplateLiteral(newGoals)}</textarea>
                             <!-- Removed "Suggest Goals" button -->
                         </div>
                         <div class="form-group">
                             <label class="label">Primary Focus:</label>
                             <select id="newFocusCategory" class="input-field">
                                 ${focusCategories.map(category => `
-                                    <option value="${category.name}" ${newFocusCategory === category.name ? 'selected' : ''}>${category.name} ${category.stars}</option>
+                                    <option value="${escapeTemplateLiteral(category.name)}" ${newFocusCategory === category.name ? 'selected' : ''}>${escapeTemplateLiteral(category.name)} ${escapeTemplateLiteral(category.stars)}</option>
                                 `).join('')}
                             </select>
                         </div>
@@ -1215,7 +1222,7 @@
                             <label class="label">Select Color:</label>
                             <div class="flex flex-wrap gap-2">
                                 ${predefinedColors.map((color, index) => `
-                                    <button type="button" class="color-picker-btn ${selectedColor === color ? 'selected' : ''}" style="background-color: ${color};" data-color="${color}" title="${color}"></button>
+                                    <button type="button" class="color-picker-btn ${selectedColor === color ? 'selected' : ''}" style="background-color: ${escapeTemplateLiteral(color)};" data-color="${escapeTemplateLiteral(color)}" title="${escapeTemplateLiteral(color)}"></button>
                                 `).join('')}
                             </div>
                         </div>
@@ -1228,19 +1235,19 @@
                                     return `
                                         <div class="flex flex-col p-2 border border-gray-200 rounded-lg">
                                             <label class="inline-flex items-center cursor-pointer mb-2">
-                                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded" ${isDaySelected ? 'checked' : ''} data-day="${day}">
-                                                <span class="ml-2 text-gray-700 font-medium">${day}</span>
+                                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded" ${isDaySelected ? 'checked' : ''} data-day="${escapeTemplateLiteral(day)}">
+                                                <span class="ml-2 text-gray-700 font-medium">${escapeTemplateLiteral(day)}</span>
                                             </label>
                                             ${isDaySelected ? `
                                                 <div class="flex gap-2">
-                                                    <select class="input-field text-sm py-1 px-2" data-day-time-type="startTime" data-day="${day}">
+                                                    <select class="input-field text-sm py-1 px-2" data-day-time-type="startTime" data-day="${escapeTemplateLiteral(day)}">
                                                         ${timeOptions.map(optionTime => `
-                                                            <option value="${optionTime}" ${currentAssignment.startTime === optionTime ? 'selected' : ''}>${optionTime}</option>
+                                                            <option value="${escapeTemplateLiteral(optionTime)}" ${currentAssignment.startTime === optionTime ? 'selected' : ''}>${escapeTemplateLiteral(optionTime)}</option>
                                                         `).join('')}
                                                     </select>
-                                                    <select class="input-field text-sm py-1 px-2" data-day-time-type="endTime" data-day="${day}">
+                                                    <select class="input-field text-sm py-1 px-2" data-day-time-type="endTime" data-day="${escapeTemplateLiteral(day)}">
                                                         ${timeOptions.map(optionTime => `
-                                                            <option value="${optionTime}" ${currentAssignment.endTime === optionTime ? 'selected' : ''}>${optionTime}</option>
+                                                            <option value="${escapeTemplateLiteral(optionTime)}" ${currentAssignment.endTime === optionTime ? 'selected' : ''}>${escapeTemplateLiteral(optionTime)}</option>
                                                         `).join('')}
                                                     </select>
                                                 </div>
@@ -1258,28 +1265,28 @@
 
                     <!-- Edit Student Form (Conditional Rendering) -->
                     ${editingStudentId ? `
-                        <form id="edit-student-form-${editingStudentId}" class="mb-8 p-4 border border-blue-300 rounded-lg bg-blue-50">
-                            <h2 class="text-2xl font-semibold text-blue-800 mb-4">Edit Student: ${editingStudentFirstName} ${editingStudentLastName}</h2>
+                        <form id="edit-student-form-${escapeTemplateLiteral(editingStudentId)}" class="mb-8 p-4 border border-blue-300 rounded-lg bg-blue-50">
+                            <h2 class="text-2xl font-semibold text-blue-800 mb-4">Edit Student: ${escapeTemplateLiteral(editingStudentFirstName)} ${escapeTemplateLiteral(editingStudentLastName)}</h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div class="form-group lg:col-span-1">
                                     <label for="editStudentFirstName" class="label">First Name:</label>
-                                    <input type="text" id="editStudentFirstName" class="input-field" value="${editingStudentFirstName}" data-edit-field="firstName" required>
+                                    <input type="text" id="editStudentFirstName" class="input-field" value="${escapeTemplateLiteral(editingStudentFirstName)}" data-edit-field="firstName" required>
                                 </div>
                                 <div class="form-group lg:col-span-1">
                                     <label for="editStudentLastName" class="label">Last Name:</label>
-                                    <input type="text" id="editStudentLastName" class="input-field" value="${editingStudentLastName}" data-edit-field="lastName" required>
+                                    <input type="text" id="editStudentLastName" class="input-field" value="${escapeTemplateLiteral(editingStudentLastName)}" data-edit-field="lastName" required>
                                 </div>
                                 <div class="form-group lg:col-span-2">
                                     <label for="editStudentPhone" class="label">Student Phone Number:</label>
-                                    <input type="tel" id="editStudentPhone" class="input-field" value="${editingStudentPhone}" data-edit-field="studentPhone" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
+                                    <input type="tel" id="editStudentPhone" class="input-field" value="${escapeTemplateLiteral(editingStudentPhone)}" data-edit-field="studentPhone" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
                                 </div>
                                 <div class="form-group lg:col-span-2">
                                     <label for="editParentName" class="label">Parent/Guardian Name:</label>
-                                    <input type="text" id="editParentName" class="input-field" value="${editingParentName}" data-edit-field="parentName">
+                                    <input type="text" id="editParentName" class="input-field" value="${escapeTemplateLiteral(editingParentName)}" data-edit-field="parentName">
                                 </div>
                                 <div class="form-group lg:col-span-2">
                                     <label for="editParentPhone" class="label">Parent/Guardian Phone Number:</label>
-                                    <input type="tel" id="editParentPhone" class="input-field" value="${editingParentPhone}" data-edit-field="parentPhone" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
+                                    <input type="tel" id="editParentPhone" class="input-field" value="${escapeTemplateLiteral(editingParentPhone)}" data-edit-field="parentPhone" pattern="\\d{3}-\\d{3}-\\d{4}" title="Phone number format: ###-###-####">
                                 </div>
                             </div>
                             <div class="form-group">
@@ -1291,22 +1298,22 @@
                                     <span><span class="explanation-emoji">🔥</span>Hot: Mastered the skill</span>
                                 </div>
                                 ${tumblingSkillsOptions.map(levelGroup => `
-                                    <h4 class="font-semibold text-gray-700 mt-4 mb-2">${levelGroup.level}</h4>
+                                    <h4 class="font-semibold text-gray-700 mt-4 mb-2">${escapeTemplateLiteral(levelGroup.level)}</h4>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         ${levelGroup.skills.map(skill => {
                                             const currentProficiencyValue = editingTumblingSkillProficiencies.find(item => item.skill === skill)?.proficiency || 0;
                                             const currentProficiencyDisplay = getTumblingProficiencyDisplay(currentProficiencyValue);
                                             return `
                                                 <div class="flex flex-col items-start gap-1 p-2 border border-gray-100 rounded-md bg-white">
-                                                    <span class="text-gray-700 text-sm font-medium w-full">${skill}:</span>
+                                                    <span class="text-gray-700 text-sm font-medium w-full">${escapeTemplateLiteral(skill)}:</span>
                                                     <div class="temperature-gauge-container">
-                                                        <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= tumblingProficiencyMap["Perfect by themselves"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= tumblingProficiencyMap["With a little help"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${skill}" data-skill-type="edit-tumbling" data-student-id="${editingStudentId}">
+                                                        <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= tumblingProficiencyMap["Perfect by themselves"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= tumblingProficiencyMap["With a little help"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="edit-tumbling" data-student-id="${escapeTemplateLiteral(editingStudentId)}">
                                                         <div class="temperature-gauge-labels w-full">
                                                             <span>Cold 🧊</span>
                                                             <span class="text-center">Warm ⭐</span>
                                                             <span class="text-right">Hot 🔥</span>
                                                         </div>
-                                                        <span class="current-proficiency-display" data-skill="${skill}" data-skill-type="edit-tumbling-display">${currentProficiencyDisplay}</span>
+                                                        <span class="current-proficiency-display" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="edit-tumbling-display">${escapeTemplateLiteral(currentProficiencyDisplay)}</span>
                                                     </div>
                                                 </div>
                                             `;
@@ -1331,15 +1338,15 @@
                                                 const currentProficiencyDisplay = getFlyingProficiencyDisplay(currentProficiencyValue);
                                                 return `
                                                     <div class="flex flex-col items-start gap-1 p-2 border border-gray-100 rounded-md bg-white">
-                                                        <span class="text-gray-700 text-sm font-medium w-full">${skill}:</span>
+                                                        <span class="text-gray-700 text-sm font-medium w-full">${escapeTemplateLiteral(skill)}:</span>
                                                         <div class="temperature-gauge-container">
-                                                            <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= flyingProficiencyMap["Picture-perfect"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= flyingProficiencyMap["Needs a little work"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${skill}" data-skill-type="edit-flying" data-student-id="${editingStudentId}">
+                                                            <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= flyingProficiencyMap["Picture-perfect"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= flyingProficiencyMap["Needs a little work"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="edit-flying" data-student-id="${escapeTemplateLiteral(editingStudentId)}">
                                                             <div class="temperature-gauge-labels w-full">
                                                                 <span>Cold 🧊</span>
                                                                 <span class="text-center">Warm ⭐</span>
                                                                 <span class="text-right">Hot 🔥</span>
                                                             </div>
-                                                            <span class="current-proficiency-display" data-skill="${skill}" data-skill-type="edit-flying-display">${currentProficiencyDisplay}</span>
+                                                            <span class="current-proficiency-display" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="edit-flying-display">${escapeTemplateLiteral(currentProficiencyDisplay)}</span>
                                                         </div>
                                                     </div>
                                                 `;
@@ -1354,15 +1361,15 @@
                                                 const currentProficiencyDisplay = getFlyingProficiencyDisplay(currentProficiencyValue);
                                                 return `
                                                     <div class="flex flex-col items-start gap-1 p-2 border border-gray-100 rounded-md bg-white">
-                                                        <span class="text-gray-700 text-sm font-medium w-full">${skill}:</span>
+                                                        <span class="text-gray-700 text-sm font-medium w-full">${escapeTemplateLiteral(skill)}:</span>
                                                         <div class="temperature-gauge-container">
-                                                            <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= flyingProficiencyMap["Picture-perfect"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= flyingProficiencyMap["Needs a little work"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${skill}" data-skill-type="edit-flying" data-student-id="${editingStudentId}">
+                                                            <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="temperature-gauge-slider ${currentProficiencyValue >= flyingProficiencyMap["Picture-perfect"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= flyingProficiencyMap["Needs a little work"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="edit-flying" data-student-id="${escapeTemplateLiteral(editingStudentId)}">
                                                             <div class="temperature-gauge-labels w-full">
                                                                 <span>Cold 🧊</span>
                                                                 <span class="text-center">Warm ⭐</span>
                                                                 <span class="text-right">Hot 🔥</span>
                                                             </div>
-                                                            <span class="current-proficiency-display" data-skill="${skill}" data-skill-type="edit-flying-display">${currentProficiencyDisplay}</span>
+                                                            <span class="current-proficiency-display" data-skill="${escapeTemplateLiteral(skill)}" data-skill-type="edit-flying-display">${escapeTemplateLiteral(currentProficiencyDisplay)}</span>
                                                         </div>
                                                     </div>
                                                 `;
@@ -1373,14 +1380,14 @@
                             </div>
                             <div class="form-group">
                                 <label for="editGoals" class="label">Goals / Things to Learn:</label>
-                                <textarea id="editGoals" class="input-field h-24" data-edit-field="goals">${editingGoals}</textarea>
+                                <textarea id="editGoals" class="input-field h-24" data-edit-field="goals">${escapeTemplateLiteral(editingGoals)}</textarea>
                                 <!-- Removed "Suggest Goals" button -->
                             </div>
                             <div class="form-group">
                                 <label class="label">Primary Focus:</label>
                                 <select id="editFocusCategory" class="input-field" data-edit-field="focusCategory">
                                     ${focusCategories.map(category => `
-                                        <option value="${category.name}" ${editingFocusCategory === category.name ? 'selected' : ''}>${category.name} ${category.stars}</option>
+                                        <option value="${escapeTemplateLiteral(category.name)}" ${editingFocusCategory === category.name ? 'selected' : ''}>${escapeTemplateLiteral(category.name)} ${escapeTemplateLiteral(category.stars)}</option>
                                     `).join('')}
                                 </select>
                             </div>
@@ -1388,7 +1395,7 @@
                                 <label class="label">Select Color:</label>
                                 <div class="flex flex-wrap gap-2">
                                     ${predefinedColors.map((color, index) => `
-                                        <button type="button" class="color-picker-btn ${editingStudentColor === color ? 'selected' : ''}" style="background-color: ${color};" data-color="${color}" data-edit-color="${editingStudentId}" title="${color}"></button>
+                                        <button type="button" class="color-picker-btn ${editingStudentColor === color ? 'selected' : ''}" style="background-color: ${escapeTemplateLiteral(color)};" data-color="${escapeTemplateLiteral(color)}" data-edit-color="${escapeTemplateLiteral(editingStudentId)}" title="${escapeTemplateLiteral(color)}"></button>
                                     `).join('')}
                                 </div>
                             </div>
@@ -1401,19 +1408,19 @@
                                         return `
                                             <div class="flex flex-col p-2 border border-gray-200 rounded-lg">
                                                 <label class="inline-flex items-center cursor-pointer mb-2">
-                                                    <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded" ${isDaySelected ? 'checked' : ''} data-day="${day}" data-edit-day="${editingStudentId}">
-                                                    <span class="ml-2 text-gray-700 font-medium">${day}</span>
+                                                    <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded" ${isDaySelected ? 'checked' : ''} data-day="${escapeTemplateLiteral(day)}" data-edit-day="${escapeTemplateLiteral(editingStudentId)}">
+                                                    <span class="ml-2 text-gray-700 font-medium">${escapeTemplateLiteral(day)}</span>
                                                 </label>
                                                 ${isDaySelected ? `
                                                     <div class="flex gap-2">
-                                                        <select class="input-field text-sm py-1 px-2" data-day-time-type="startTime" data-day="${day}">
+                                                        <select class="input-field text-sm py-1 px-2" data-day-time-type="startTime" data-day="${escapeTemplateLiteral(day)}">
                                                             ${timeOptions.map(optionTime => `
-                                                                <option value="${optionTime}" ${currentAssignment.startTime === optionTime ? 'selected' : ''}>${optionTime}</option>
+                                                                <option value="${escapeTemplateLiteral(optionTime)}" ${currentAssignment.startTime === optionTime ? 'selected' : ''}>${escapeTemplateLiteral(optionTime)}</option>
                                                             `).join('')}
                                                         </select>
-                                                        <select class="input-field text-sm py-1 px-2" data-day-time-type="endTime" data-day="${day}">
+                                                        <select class="input-field text-sm py-1 px-2" data-day-time-type="endTime" data-day="${escapeTemplateLiteral(day)}">
                                                             ${timeOptions.map(optionTime => `
-                                                                <option value="${optionTime}" ${currentAssignment.endTime === optionTime ? 'selected' : ''}>${optionTime}</option>
+                                                                <option value="${escapeTemplateLiteral(optionTime)}" ${currentAssignment.endTime === optionTime ? 'selected' : ''}>${escapeTemplateLiteral(optionTime)}</option>
                                                             `).join('')}
                                                         </select>
                                                     </div>
@@ -1425,7 +1432,7 @@
                             </div>
                             <div class="flex gap-2 mt-6">
                                 <button type="submit" class="btn btn-green flex-1">Save Changes</button>
-                                <button type="button" class="btn btn-gray flex-1" data-cancel-edit="${editingStudentId}">Cancel</button>
+                                <button type="button" class="btn btn-gray flex-1" data-cancel-edit="${escapeTemplateLiteral(editingStudentId)}">Cancel</button>
                             </div>
                         </form>
                     ` : ''}
@@ -1442,40 +1449,40 @@
                                         <div class="font-semibold text-lg text-gray-800 w-full mb-2">Student List</div>
                                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
                                             ${students.map(student => `
-                                                <div class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-between" style="border-left: 5px solid ${student.color};">
+                                                <div class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-between" style="border-left: 5px solid ${escapeTemplateLiteral(student.color)};">
                                                     <div>
-                                                        <span class="font-bold text-lg cursor-pointer" style="color: ${student.color};" data-toggle-details="${student.id}">
-                                                            ${student.firstName} ${student.lastName} ${getStarsForCategory(student.focusCategory)}
+                                                        <span class="font-bold text-lg cursor-pointer" style="color: ${escapeTemplateLiteral(student.color)};" data-toggle-details="${escapeTemplateLiteral(student.id)}">
+                                                            ${escapeTemplateLiteral(student.firstName)} ${escapeTemplateLiteral(student.lastName)} ${escapeTemplateLiteral(getStarsForCategory(student.focusCategory))}
                                                         </span>
                                                         ${expandedStudentId === student.id ? `
                                                             <div class="text-gray-600 text-sm mt-1">
-                                                                <p><strong>Student:</strong> ${student.firstName} ${student.lastName} ${student.studentPhone ? `(${student.studentPhone})` : ''}</p>
-                                                                ${student.parentName ? `<p><strong>Parent:</strong> ${student.parentName} ${student.parentPhone ? `(${student.parentPhone})` : ''}</p>` : ''}
+                                                                <p><strong>Student:</strong> ${escapeTemplateLiteral(student.firstName)} ${escapeTemplateLiteral(student.lastName)} ${student.studentPhone ? `(${escapeTemplateLiteral(student.studentPhone)})` : ''}</p>
+                                                                ${student.parentName ? `<p><strong>Parent:</strong> ${escapeTemplateLiteral(student.parentName)} ${student.parentPhone ? `(${escapeTemplateLiteral(student.parentPhone)})` : ''}</p>` : ''}
                                                                 ${student.tumblingSkillProficiencies && student.tumblingSkillProficiencies.length > 0 ?
                                                                     `<p class="font-semibold mt-2">Tumbling Skills:</p>` +
                                                                     student.tumblingSkillProficiencies.map(ts => `
-                                                                        <p class="ml-4">- ${ts.skill}: ${getTumblingProficiencyDisplay(ts.proficiency)}</p>
+                                                                        <p class="ml-4">- ${escapeTemplateLiteral(ts.skill)}: ${escapeTemplateLiteral(getTumblingProficiencyDisplay(ts.proficiency))}</p>
                                                                     `).join('')
                                                                 : ''}
                                                                 ${student.flyingSkillProficiencies && student.flyingSkillProficiencies.length > 0 ?
                                                                     `<p class="font-semibold mt-2">Flying Skills:</p>` +
                                                                     student.flyingSkillProficiencies.map(fs => `
-                                                                        <p class="ml-4">- ${fs.skill}: ${getFlyingProficiencyDisplay(fs.proficiency)}</p>
+                                                                        <p class="ml-4">- ${escapeTemplateLiteral(fs.skill)}: ${escapeTemplateLiteral(getFlyingProficiencyDisplay(fs.proficiency))}</p>
                                                                     `).join('')
                                                                 : ''}
-                                                                ${student.goals ? `<p><strong>Goals:</strong> ${student.goals}</p>` : ''}
+                                                                ${student.goals ? `<p><strong>Goals:</strong> ${escapeTemplateLiteral(student.goals)}</p>` : ''}
                                                                 ${(student.assignedDays || []).length > 0 ?
                                                                     `<p class="font-semibold mt-2">Assigned Days:</p>` +
                                                                     student.assignedDays.map(assignment => `
-                                                                        <p class="ml-2">${assignment.day}: ${assignment.startTime || 'Not set'} - ${assignment.endTime || 'Not set'}</p>
+                                                                        <p class="ml-2">${escapeTemplateLiteral(assignment.day)}: ${escapeTemplateLiteral(assignment.startTime || 'Not set')} - ${escapeTemplateLiteral(assignment.endTime || 'Not set')}</p>
                                                                     `).join('')
                                                                 : `<p>No days assigned</p>`}
                                                             </div>
                                                         ` : ''}
                                                     </div>
                                                     <div class="flex gap-2 mt-4">
-                                                        <button type="button" class="btn btn-yellow text-sm flex-1" data-edit-student="${student.id}">Edit</button>
-                                                        <button type="button" class="btn btn-red text-sm flex-1" data-delete-student="${student.id}">Delete</button>
+                                                        <button type="button" class="btn btn-yellow text-sm flex-1" data-edit-student="${escapeTemplateLiteral(student.id)}">Edit</button>
+                                                        <button type="button" class="btn btn-red text-sm flex-1" data-delete-student="${escapeTemplateLiteral(student.id)}">Delete</button>
                                                     </div>
                                                 </div>
                                             `).join('')}
@@ -1496,7 +1503,7 @@
 
                                 return `
                                     <div class="calendar-day">
-                                        <h3>${day}</h3>
+                                        <h3>${escapeTemplateLiteral(day)}</h3>
                                         <ul class="list-none p-0 m-0 text-center">
                                             ${studentsOnThisDay.map(student => {
                                                 const assignment = student.assignedDays.find(item => item.day === day);
@@ -1520,10 +1527,10 @@
                                                 }
 
                                                 return `
-                                                    <li class="student-item" style="color: ${student.color};">
-                                                        ${student.firstName} ${student.lastName} ${getStarsForCategory(student.focusCategory)}
+                                                    <li class="student-item" style="color: ${escapeTemplateLiteral(student.color)};">
+                                                        ${escapeTemplateLiteral(student.firstName)} ${escapeTemplateLiteral(student.lastName)} ${escapeTemplateLiteral(getStarsForCategory(student.focusCategory))}
                                                         <span class="student-time ${isOverlapping ? 'text-red-600 font-bold' : ''}">
-                                                            ${assignment.startTime} - ${assignment.endTime}
+                                                            ${escapeTemplateLiteral(assignment.startTime)} - ${escapeTemplateLiteral(assignment.endTime)}
                                                         </span>
                                                     </li>
                                                 `;
@@ -1539,8 +1546,8 @@
                     ${showModal ? `
                         <div class="modal">
                             <div class="modal-content">
-                                <h3>${modalMessage.includes('Error') ? 'Error' : 'Notification'}</h3>
-                                <p>${modalMessage}</p>
+                                <h3>${escapeTemplateLiteral(modalMessage.includes('Error') ? 'Error' : 'Notification')}</h3>
+                                <p>${escapeTemplateLiteral(modalMessage)}</p>
                                 <button type="button" class="btn btn-blue" onclick="closeCustomModal()">OK</button>
                             </div>
                         </div>
@@ -1550,7 +1557,7 @@
                     ${showLlmOutputModalState ? `
                         <div class="modal">
                             <div class="modal-content max-w-2xl text-left">
-                                ${llmOutputModalMessage}
+                                ${escapeTemplateLiteral(llmOutputModalMessage)}
                                 <button type="button" class="btn btn-blue mt-4" onclick="hideLlmOutputModal()">Close</button>
                             </div>
                         </div>
@@ -1611,7 +1618,7 @@
                     document.getElementById('newFocusCategory').onchange = (e) => { newFocusCategory = e.target.value; };
 
                     // Attach event listeners for new tumbling skill sliders
-                    appDiv.querySelectorAll('#add-student-form input[type="range'][data-skill-type="new-tumbling"]').forEach(slider => {
+                    appDiv.querySelectorAll('#add-student-form input[type="range"][data-skill-type="new-tumbling"]').forEach(slider => {
                         slider.oninput = (e) => {
                             const displayElement = addForm.querySelector(`span[data-skill="${e.target.dataset.skill}"][data-skill-type="new-tumbling-display"]`);
                             handleTumblingSkillChange(e.target.dataset.skill, parseInt(e.target.value), false, displayElement, e.target);
