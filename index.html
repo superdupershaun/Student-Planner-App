@@ -344,15 +344,16 @@
 
         // Ensure __app_id and __firebase_config are defined in the Canvas environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        // IMPORTANT: Replace "YOUR_FIREBASE_API_KEY" with your actual Firebase Web API Key from your Firebase project settings.
+        // The Canvas environment will automatically provide a key if this is left as an empty string.
         const firebaseConfig = {
-          apiKey: "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz2HabuQjmHbA",
-          authDomain: "private-lessons-ab22f.firebaseapp.com",
-          projectId: "private-lessons-ab22f",
-          storageBucket: "private-lessons-ab22f.firebasestorage.app",
-          messagingSenderId: "21096957752",
-          appId: "1:21096957752:web:0cf6a8d3556b40cb57a3cd",
-          measurementId: "G-JMKM2MM8DN"
-        };
+         apiKey: "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA",
+  authDomain: "private-lessons-ab22f.firebaseapp.com",
+  projectId: "private-lessons-ab22f",
+  storageBucket: "private-lessons-ab22f.firebasestorage.app",
+  messagingSenderId: "21096957752",
+  appId: "1:21096957752:web:0cf6a8d3556b40cb57a3cd",
+  measurementId: "G-JMKM2MM8DN"
 
         console.log("Firebase Config being used:", firebaseConfig);
 
@@ -546,7 +547,7 @@
             }
             const [startTimeStr, endTimeStr] = timeRangeString.split(' - ');
             const startMinutes = convertTimeToMinutes(startTimeStr.trim());
-            const endMinutes = convertTimeToTimeToMinutes(endTimeStr.trim());
+            const endMinutes = convertTimeToMinutes(endTimeStr.trim());
             return { start: startMinutes, end: endMinutes };
         }
 
