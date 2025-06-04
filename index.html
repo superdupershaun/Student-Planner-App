@@ -773,8 +773,8 @@
                 showCustomModal(`Error loading students: ${escapeTemplateLiteral(error.message)}`);
             });
 
-            // Listener for pending submissions
-            const pendingSubmissionsCollectionRef = collection(db, `artifacts/${appId}/public/submissions/${userId}/pendingStudents`);
+            // Listener for pending submissions - UPDATED PATH
+            const pendingSubmissionsCollectionRef = collection(db, `artifacts/${appId}/public_submissions/${userId}/pendingStudents`);
             onSnapshot(pendingSubmissionsCollectionRef, (snapshot) => {
                 pendingSubmissions = snapshot.docs.map(doc => ({
                     id: doc.id,
@@ -1142,8 +1142,8 @@
                 const studentsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/students`);
                 await addDoc(studentsCollectionRef, newStudentData);
 
-                // 2. Delete from pending submissions
-                const pendingSubmissionDocRef = doc(db, `artifacts/${appId}/public/submissions/${userId}/pendingStudents`, submission.id);
+                // 2. Delete from pending submissions - UPDATED PATH
+                const pendingSubmissionDocRef = doc(db, `artifacts/${appId}/public_submissions/${userId}/pendingStudents`, submission.id);
                 await deleteDoc(pendingSubmissionDocRef);
 
                 showCustomModal(`${submission.firstName} ${submission.lastName} approved and added to your students!`);
@@ -1155,7 +1155,8 @@
 
         async function handleRejectSubmission(submissionId) {
             try {
-                const pendingSubmissionDocRef = doc(db, `artifacts/${appId}/public/submissions/${userId}/pendingStudents`, submissionId);
+                // Delete from pending submissions - UPDATED PATH
+                const pendingSubmissionDocRef = doc(db, `artifacts/${appId}/public_submissions/${userId}/pendingStudents`, submissionId);
                 await deleteDoc(pendingSubmissionDocRef);
                 showCustomModal("Submission rejected and removed.");
             } catch (error) {
