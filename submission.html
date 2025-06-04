@@ -264,7 +264,7 @@
 
                         try {
                             // Add to a public collection accessible by the ownerUserId
-                            const submissionsCollectionRef = collection(db, `artifacts/${appId}/public/submissions/${ownerUserId}/pendingStudents`);
+                            const submissionsCollectionRef = collection(db, `artifacts/<span class="math-inline">\{appId\}/public\_submissions/</span>{ownerId}/pendingStudents`);
                             await addDoc(submissionsCollectionRef, submissionData);
 
                             document.getElementById('loading-spinner').classList.add('hidden');
