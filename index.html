@@ -341,10 +341,14 @@
         let llmOutputModalMessage = ''; // New: For LLM output modal
         let showLlmOutputModalState = false; // Renamed to avoid conflict with function name
 
-        // Utility function to escape backticks in strings for template literals
+        // Utility function to escape characters that could break HTML or JavaScript contexts
         function escapeTemplateLiteral(str) {
             if (typeof str !== 'string') return str;
-            return str.replace(/`/g, '\\`');
+            // Escape backticks for JS template literals
+            // Escape HTML special characters for insertion into HTML content/attributes
+            return str.replace(/`/g, '\\`') // Escape backticks for JS template strings
+                      .replace(/"/g, '&quot;') // Escape double quotes for HTML attributes
+                      .replace(/'/g, '&#39;'); // Escape single quotes for HTML attributes
         }
 
         // IMPORTANT: Replace "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA" and "1:21096957752:web:0cf6a8d3556b40cb57a3cd"
