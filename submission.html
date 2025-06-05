@@ -21,7 +21,7 @@
             border-radius: 0.5rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             width: 100%;
-            max-width: 32rem; /* Adjusted max-width for submission form */
+            max-width: 38rem; /* Adjusted max-width for submission form with sliders */
             margin-bottom: 2rem;
         }
         .form-group {
@@ -106,6 +106,147 @@
             color: #374151;
             margin-bottom: 1.5rem;
         }
+
+        /* Custom Slider Styles for Proficiency Gauge */
+        .proficiency-gauge-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+        .proficiency-gauge-labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+        .proficiency-gauge-labels span {
+            flex: 1;
+            text-align: center;
+        }
+        .proficiency-gauge-labels span:first-child { text-align: left; }
+        .proficiency-gauge-labels span:last-child { text-align: right; }
+
+        .proficiency-gauge-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 1rem;
+            border-radius: 0.5rem;
+            background: linear-gradient(to right, #3b82f6, #facc15, #ef4444); /* Cold to Hot gradient */
+            outline: none;
+            opacity: 0.9;
+            transition: opacity .2s;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .proficiency-gauge-slider:hover {
+            opacity: 1;
+        }
+
+        /* Default slider thumb (Cold) */
+        .proficiency-gauge-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            background: #BFDBFE; /* Light blue for cold */
+            border: 2px solid #60A5FA; /* Blue border */
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .proficiency-gauge-slider::-moz-range-thumb {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            background: #BFDBFE; /* Light blue for cold */
+            border: 2px solid #60A5FA; /* Blue border */
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        /* Styles for the "Warm" slider thumb */
+        .proficiency-gauge-slider.slider-warm-value::-webkit-slider-thumb {
+            background: #FDE68A; /* Light yellow/gold for warm */
+            border-color: #FBBF24; /* Orange border */
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.5); /* Subtle glow */
+        }
+        .proficiency-gauge-slider.slider-warm-value::-moz-range-thumb {
+            background: #FDE68A; /* Light yellow/gold for warm */
+            border-color: #FBBF24; /* Orange border */
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.5); /* Subtle glow */
+        }
+
+        /* Styles for the "Hot" slider thumb */
+        .proficiency-gauge-slider.slider-hot-value::-webkit-slider-thumb {
+            background: #FF4500; /* OrangeRed */
+            border-color: #DC143C; /* Crimson */
+            box-shadow: 0 0 0 4px rgba(255, 69, 0, 0.5); /* Fiery glow */
+        }
+        .proficiency-gauge-slider.slider-hot-value::-moz-range-thumb {
+            background: #FF4500; /* OrangeRed */
+            border-color: #DC143C; /* Crimson */
+            box-shadow: 0 0 0 4px rgba(255, 69, 0, 0.5); /* Fiery glow */
+        }
+
+        /* Ensure default thumb style is 'cold' if no specific class is applied */
+        .proficiency-gauge-slider.slider-cold-value::-webkit-slider-thumb {
+            background: #BFDBFE; /* Light blue for cold */
+            border-color: #60A5FA; /* Blue border */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .proficiency-gauge-slider.slider-cold-value::-moz-range-thumb {
+            background: #BFDBFE; /* Light blue for cold */
+            border-color: #60A5FA; /* Blue border */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .current-proficiency-display {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-top: 0.5rem;
+            text-align: center;
+            width: 100%;
+        }
+
+        .explanation-bar {
+            width: 100%;
+            height: 1rem;
+            border-radius: 0.5rem;
+            background: linear-gradient(to right, #3b82f6, #facc15, #ef4444);
+            margin-bottom: 0.5rem;
+        }
+        .explanation-text {
+            display: flex;
+            justify-content: space-between;
+            align-items: center; /* Align text and emojis vertically */
+            width: 100%;
+            font-size: 0.75rem;
+            color: #4b5563;
+            margin-bottom: 1rem;
+        }
+        .explanation-text span {
+            flex: 1;
+            text-align: center;
+            display: flex; /* Use flex to align text and emoji */
+            flex-direction: column; /* Stack text and emoji */
+            align-items: center; /* Center content within span */
+        }
+        .explanation-text span:first-child { text-align: left; align-items: flex-start; }
+        .explanation-text span:last-child { text-align: right; align-items: flex-end; }
+
+        .explanation-emoji {
+            font-size: 2rem; /* Make emojis bigger */
+            line-height: 1; /* Adjust line height to prevent extra space */
+            margin-bottom: 0.25rem; /* Space between emoji and text */
+        }
     </style>
 </head>
 <body>
@@ -132,6 +273,11 @@
         let showModal = false;
         let modalMessage = '';
         let ownerId = null; // Will be extracted from URL
+
+        // State for skill proficiencies in this form
+        let newTumblingSkillProficiencies = []; // [{ skill: "Handstand", proficiency: 50 }]
+        let newFlyingSkillProficiencies = [];   // [{ skill: "Lt leg heel stretch", proficiency: 75 }]
+
 
         // Utility function to escape characters for HTML
         function escapeHtml(unsafe) {
@@ -179,6 +325,110 @@
         // Ensure __app_id is defined in the Canvas environment.
         const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.appId;
 
+        // Skill options and proficiency maps (copied from main planner for consistency)
+        const tumblingSkillsOptions = [
+            { level: "Fundamentals", skills: ["Foward roll", "Backroll", "Handstand", "Bridge", "Cartwheel", "Roundoff"] },
+            { level: "Level 1", skills: ["Backbend", "Backwalkover", "Front walkover", "Valdez"] },
+            { level: "Level 2", skills: ["Standing back handspring", "Front handspring/front bounder", "Standing multiple handspring", "Round off back handspring"] },
+            { level: "Level 3", skills: ["Round off back tuck", "Round off back handspring back tuck", "Ariel"] },
+            { level: "Level 4", skills: ["Standing back tuck", "Standing back handspring back tuck", "Round off back handspring layout"] },
+            { level: "Level 5", skills: ["Round off backhandspring full", "Standing full"] }
+        ];
+
+        const tumblingProficiencyMap = {
+            "Don't have the skill yet": { range: [0, 33], display: "Cold 🧊" },
+            "With a little help": { range: [34, 66], display: "Warm ⭐" },
+            "Perfect by themselves": { range: [67, 100], display: "Hot 🔥" }
+        };
+
+        const flyingSkillsOptions = {
+            "Lt Leg Skills": ["Lt leg split", "Lt leg heel stretch", "Lt leg liberty", "Lt leg bow and arrow", "Lt leg scorpion", "Lt leg needle", "Lt leg arabesque"],
+            "Rt Leg Skills": ["Rt leg split", "Rt leg heel stretch", "Rt leg liberty", "Rt leg bow and arrow", "Rt leg scorpion", "Rt leg needle", "Rt leg arabesque"]
+        };
+
+        const flyingProficiencyMap = {
+            "Stiff as a board": { range: [0, 33], display: "Cold 🧊" },
+            "Needs a little work": { range: [34, 66], display: "Warm ⭐" },
+            "Picture-perfect": { range: [67, 100], display: "Hot 🔥" }
+        };
+
+        // Helper function to convert numerical proficiency to display string
+        function getTumblingProficiencyDisplay(value) {
+            if (value === null || value === undefined) return "Not rated";
+            if (value >= tumblingProficiencyMap["Perfect by themselves"].range[0]) return tumblingProficiencyMap["Perfect by themselves"].display;
+            if (value >= tumblingProficiencyMap["With a little help"].range[0]) return tumblingProficiencyMap["With a little help"].display;
+            return tumblingProficiencyMap["Don't have the skill yet"].display;
+        }
+
+        function getFlyingProficiencyDisplay(value) {
+            if (value === null || value === undefined) return "Not rated";
+            if (value >= flyingProficiencyMap["Picture-perfect"].range[0]) return flyingProficiencyMap["Picture-perfect"].display;
+            if (value >= flyingProficiencyMap["Needs a little work"].range[0]) return flyingProficiencyMap["Needs a little work"].display;
+            return flyingProficiencyMap["Stiff as a board"].display;
+        }
+
+        // Helper function to get current proficiency value from array
+        function getCurrentProficiencyValue(skill, skillArray) {
+            const found = skillArray.find(item => item.skill === skill);
+            return found ? found.proficiency : 0; // Default to 0 if not found
+        }
+
+        // Handle proficiency change from slider (now takes numerical value)
+        function handleTumblingSkillChange(skill, proficiencyValue, displayElement = null, sliderElement = null) {
+            const existingSkillIndex = newTumblingSkillProficiencies.findIndex(item => item.skill === skill);
+
+            if (existingSkillIndex !== -1) {
+                newTumblingSkillProficiencies[existingSkillIndex].proficiency = proficiencyValue;
+            } else {
+                newTumblingSkillProficiencies.push({ skill: skill, proficiency: proficiencyValue });
+            }
+
+            // Directly update the display element without re-rendering the whole app
+            if (displayElement) {
+                displayElement.textContent = getTumblingProficiencyDisplay(proficiencyValue);
+            }
+
+            // Update slider thumb class based on value
+            if (sliderElement) {
+                sliderElement.classList.remove('slider-cold-value', 'slider-warm-value', 'slider-hot-value'); // Remove all first
+                if (proficiencyValue >= tumblingProficiencyMap["Perfect by themselves"].range[0]) {
+                    sliderElement.classList.add('slider-hot-value');
+                } else if (proficiencyValue >= tumblingProficiencyMap["With a little help"].range[0]) {
+                    sliderElement.classList.add('slider-warm-value');
+                } else {
+                    sliderElement.classList.add('slider-cold-value');
+                }
+            }
+        }
+
+        function handleFlyingSkillChange(skill, proficiencyValue, displayElement = null, sliderElement = null) {
+            const existingSkillIndex = newFlyingSkillProficiencies.findIndex(item => item.skill === skill);
+
+            if (existingSkillIndex !== -1) {
+                newFlyingSkillProficiencies[existingSkillIndex].proficiency = proficiencyValue;
+            } else {
+                newFlyingSkillProficiencies.push({ skill: skill, proficiency: proficiencyValue });
+            }
+
+            // Directly update the display element without re-rendering the whole app
+            if (displayElement) {
+                displayElement.textContent = getFlyingProficiencyDisplay(proficiencyValue);
+            }
+
+            // Update slider thumb class based on value
+            if (sliderElement) {
+                sliderElement.classList.remove('slider-cold-value', 'slider-warm-value', 'slider-hot-value'); // Remove all first
+                if (proficiencyValue >= flyingProficiencyMap["Picture-perfect"].range[0]) {
+                    sliderElement.classList.add('slider-hot-value');
+                } else if (proficiencyValue >= flyingProficiencyMap["Needs a little work"].range[0]) {
+                    sliderElement.classList.add('slider-warm-value');
+                } else {
+                    sliderElement.classList.add('slider-cold-value');
+                }
+            }
+        }
+
+
         // --- Firebase Initialization and Authentication ---
         async function initializeFirebaseAndAuth() {
             console.log("initializeFirebaseAndAuth: Start");
@@ -214,8 +464,6 @@
                         }
                     } else {
                         console.log("onAuthStateChanged: No user is logged in after auth state check. Attempting anonymous sign-in failed or did not resolve.");
-                        // It's possible signInAnonymously failed or hadn't completed before this initial onAuthStateChanged fires.
-                        // We will rely on the catch block of signInAnonymously below for error messages.
                         isAuthReady = true; // Still set auth ready to true to force render and clear spinner
                         showCustomModal("Authentication for submission form failed. Please try reloading the page or contact support.");
                     }
@@ -268,7 +516,7 @@
                 console.log("lastNameInput exists:", !!lastNameInput);
                 console.log("studentPhoneInput exists:", !!studentPhoneInput);
                 console.log("parentNameInput exists:", !!parentNameInput);
-                console.log("parentPhoneInput exists:", !!parentPhoneInput); // This is the one to watch
+                console.log("parentPhoneInput exists:", !!parentPhoneInput);
                 console.log("goalsInput exists:", !!goalsInput);
 
                 // Defensive extraction using optional chaining (?. ) and default to empty string (|| '')
@@ -277,7 +525,9 @@
                     lastName: lastNameInput?.value.trim() || '',
                     studentPhone: studentPhoneInput?.value.trim() || '',
                     parentName: parentNameInput?.value.trim() || '',
-                    parentPhone: parentPhoneInput?.value.trim() || '', // Corrected with optional chaining
+                    parentPhone: parentPhoneInput?.value.trim() || '',
+                    tumblingSkillProficiencies: newTumblingSkillProficiencies, // Include collected proficiencies
+                    flyingSkillProficiencies: newFlyingSkillProficiencies,     // Include collected proficiencies
                     goals: goalsInput?.value.trim() || '',
                     submissionDate: new Date().toISOString(), // Record submission time
                 };
@@ -289,13 +539,19 @@
                 const submissionsCollectionRef = collection(db, `artifacts/${appId}/public_submissions/${ownerId}/pendingStudents`);
                 await addDoc(submissionsCollectionRef, submissionData);
                 showCustomModal("Your information has been submitted successfully! Thank you.");
-                // Clear form fields after submission
+                // Clear form fields and proficiency arrays after submission
                 if (firstNameInput) firstNameInput.value = '';
                 if (lastNameInput) lastNameInput.value = '';
                 if (studentPhoneInput) studentPhoneInput.value = '';
                 if (parentNameInput) parentNameInput.value = '';
                 if (parentPhoneInput) parentPhoneInput.value = '';
                 if (goalsInput) goalsInput.value = '';
+
+                // Reset proficiency arrays
+                newTumblingSkillProficiencies = [];
+                newFlyingSkillProficiencies = [];
+                // Re-render to clear slider displays
+                renderApp();
 
             } catch (error) {
                 console.error("Submission failed:", error);
@@ -373,6 +629,97 @@
                             </div>
                         </div>
 
+                        <div class="form-group mt-6">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Tumbling Skills Proficiency:</h3>
+                            <div class="explanation-bar"></div>
+                            <div class="explanation-text">
+                                <span><span class="explanation-emoji">🧊</span>Cold: Don't have</span>
+                                <span><span class="explanation-emoji">⭐</span>Warm: You're close</span>
+                                <span><span class="explanation-emoji">🔥</span>Hot: Mastered the skill</span>
+                            </div>
+                            ${tumblingSkillsOptions.map(levelGroup => `
+                                <h4 class="font-semibold text-gray-700 mt-4 mb-2">${escapeHtml(levelGroup.level)}</h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    ${levelGroup.skills.map(skill => {
+                                        const currentProficiencyValue = getCurrentProficiencyValue(skill, newTumblingSkillProficiencies);
+                                        const currentProficiencyDisplay = getTumblingProficiencyDisplay(currentProficiencyValue);
+                                        return `
+                                            <div class="flex flex-col items-start gap-1 p-2 border border-gray-100 rounded-md bg-white">
+                                                <span class="text-gray-700 text-sm font-medium w-full">${escapeHtml(skill)}:</span>
+                                                <div class="proficiency-gauge-container">
+                                                    <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="proficiency-gauge-slider ${currentProficiencyValue >= tumblingProficiencyMap["Perfect by themselves"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= tumblingProficiencyMap["With a little help"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${escapeHtml(skill)}" data-skill-type="new-tumbling">
+                                                    <div class="proficiency-gauge-labels w-full">
+                                                        <span>Cold 🧊</span>
+                                                        <span class="text-center">Warm ⭐</span>
+                                                        <span class="text-right">Hot 🔥</span>
+                                                    </div>
+                                                    <span class="current-proficiency-display" data-skill="${escapeHtml(skill)}" data-skill-type="new-tumbling-display">${escapeHtml(currentProficiencyDisplay)}</span>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="form-group mt-6">
+                            <h3 class="text-xl font-semibold text-gray-700 mb-4">Flying Skills Proficiency:</h3>
+                            <div class="explanation-bar"></div>
+                            <div class="explanation-text">
+                                <span><span class="explanation-emoji">🧊</span>Stiff as a board</span>
+                                <span><span class="explanation-emoji">⭐</span>Needs a little work</span>
+                                <span><span class="explanation-emoji">🔥</span>Picture-perfect</span>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mt-4 mb-2">Lt Leg Skills</h4>
+                                    <div class="grid grid-cols-1 gap-2">
+                                        ${flyingSkillsOptions["Lt Leg Skills"].map(skill => {
+                                            const currentProficiencyValue = getCurrentProficiencyValue(skill, newFlyingSkillProficiencies);
+                                            const currentProficiencyDisplay = getFlyingProficiencyDisplay(currentProficiencyValue);
+                                            return `
+                                                <div class="flex flex-col items-start gap-1 p-2 border border-gray-100 rounded-md bg-white">
+                                                    <span class="text-gray-700 text-sm font-medium w-full">${escapeHtml(skill)}:</span>
+                                                    <div class="proficiency-gauge-container">
+                                                        <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="proficiency-gauge-slider ${currentProficiencyValue >= flyingProficiencyMap["Picture-perfect"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= flyingProficiencyMap["Needs a little work"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${escapeHtml(skill)}" data-skill-type="new-flying">
+                                                        <div class="proficiency-gauge-labels w-full">
+                                                            <span>Cold 🧊</span>
+                                                            <span class="text-center">Warm ⭐</span>
+                                                            <span class="text-right">Hot 🔥</span>
+                                                        </div>
+                                                        <span class="current-proficiency-display" data-skill="${escapeHtml(skill)}" data-skill-type="new-flying-display">${escapeHtml(currentProficiencyDisplay)}</span>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-gray-700 mt-4 mb-2">Rt Leg Skills</h4>
+                                    <div class="grid grid-cols-1 gap-2">
+                                        ${flyingSkillsOptions["Rt Leg Skills"].map(skill => {
+                                            const currentProficiencyValue = getCurrentProficiencyValue(skill, newFlyingSkillProficiencies);
+                                            const currentProficiencyDisplay = getFlyingProficiencyDisplay(currentProficiencyValue);
+                                            return `
+                                                <div class="flex flex-col items-start gap-1 p-2 border border-gray-100 rounded-md bg-white">
+                                                    <span class="text-gray-700 text-sm font-medium w-full">${escapeHtml(skill)}:</span>
+                                                    <div class="proficiency-gauge-container">
+                                                        <input type="range" min="0" max="100" value="${currentProficiencyValue}" class="proficiency-gauge-slider ${currentProficiencyValue >= flyingProficiencyMap["Picture-perfect"].range[0] ? 'slider-hot-value' : (currentProficiencyValue >= flyingProficiencyMap["Needs a little work"].range[0] ? 'slider-warm-value' : 'slider-cold-value')}" data-skill="${escapeHtml(skill)}" data-skill-type="new-flying">
+                                                        <div class="proficiency-gauge-labels w-full">
+                                                            <span>Cold 🧊</span>
+                                                            <span class="text-center">Warm ⭐</span>
+                                                            <span class="text-right">Hot 🔥</span>
+                                                        </div>
+                                                        <span class="current-proficiency-display" data-skill="${escapeHtml(skill)}" data-skill-type="new-flying-display">${escapeHtml(currentProficiencyDisplay)}</span>
+                                                    </div>
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="flex justify-center mt-8">
                             <button type="submit" class="btn btn-blue text-lg px-8 py-3 rounded-lg shadow-lg hover:shadow-xl">Submit My Information</button>
                         </div>
@@ -394,6 +741,30 @@
 
                     const parentPhoneInput = document.getElementById('parentPhone');
                     if (parentPhoneInput) parentPhoneInput.oninput = (e) => { e.target.value = formatPhoneNumber(e.target.value); };
+
+                    // Attach event listeners for new tumbling skill sliders
+                    appDiv.querySelectorAll('input[type="range"][data-skill-type="new-tumbling"]').forEach(slider => {
+                        // Re-initialize the slider's display and class based on its current value
+                        const displayElement = slider.closest('.proficiency-gauge-container')?.querySelector('.current-proficiency-display');
+                        handleTumblingSkillChange(slider.dataset.skill, parseInt(slider.value), displayElement, slider);
+
+                        slider.oninput = (e) => {
+                            const displayElement = slider.closest('.proficiency-gauge-container')?.querySelector('.current-proficiency-display');
+                            handleTumblingSkillChange(e.target.dataset.skill, parseInt(e.target.value), displayElement, e.target);
+                        };
+                    });
+
+                    // Attach event listeners for new flying skill sliders
+                    appDiv.querySelectorAll('input[type="range"][data-skill-type="new-flying"]').forEach(slider => {
+                        // Re-initialize the slider's display and class based on its current value
+                        const displayElement = slider.closest('.proficiency-gauge-container')?.querySelector('.current-proficiency-display');
+                        handleFlyingSkillChange(slider.dataset.skill, parseInt(slider.value), displayElement, slider);
+
+                        slider.oninput = (e) => {
+                            const displayElement = slider.closest('.proficiency-gauge-container')?.querySelector('.current-proficiency-display');
+                            handleFlyingSkillChange(e.target.dataset.skill, parseInt(e.target.value), displayElement, e.target);
+                        };
+                    });
                 }
             }
 
