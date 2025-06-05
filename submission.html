@@ -55,7 +55,7 @@
             padding: 0.5rem 1rem;
             border-radius: 0.5rem;
             transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 44px 6px -2px rgba(0, 0, 0, 0.05);
         }
         .btn-blue {
             background-color: #2563eb;
@@ -254,29 +254,48 @@
             isLoading = true; // Show loading spinner during submission
             renderApp();
 
-            const submissionData = {
-                firstName: document.getElementById('firstName').value.trim(),
-                lastName: document.getElementById('lastName').value.trim(),
-                studentPhone: document.getElementById('studentPhone').value.trim(),
-                parentName: document.getElementById('parentName').value.trim(),
-                parentPhone: document.getElementById('parentPhone').value.trim(),
-                goals: document.getElementById('goals').value.trim(),
-                submissionDate: new Date().toISOString(), // Record submission time
-            };
-
             try {
+                console.log("handleSubmit: Attempting to extract form data.");
+                const firstNameInput = document.getElementById('firstName');
+                const lastNameInput = document.getElementById('lastName');
+                const studentPhoneInput = document.getElementById('studentPhone');
+                const parentNameInput = document.getElementById('parentName');
+                const parentPhoneInput = document.getElementById('parentPhone');
+                const goalsInput = document.getElementById('goals');
+
+                // Log existence of elements - these will show true/false
+                console.log("firstNameInput exists:", !!firstNameInput);
+                console.log("lastNameInput exists:", !!lastNameInput);
+                console.log("studentPhoneInput exists:", !!studentPhoneInput);
+                console.log("parentNameInput exists:", !!parentNameInput);
+                console.log("parentPhoneInput exists:", !!parentPhoneInput); // This is the one to watch
+                console.log("goalsInput exists:", !!goalsInput);
+
+                // Defensive extraction using optional chaining (?. ) and default to empty string (|| '')
+                const submissionData = {
+                    firstName: firstNameInput?.value.trim() || '',
+                    lastName: lastNameInput?.value.trim() || '',
+                    studentPhone: studentPhoneInput?.value.trim() || '',
+                    parentName: parentNameInput?.value.trim() || '',
+                    parentPhone: parentPhoneInput?.value.trim() || '', // Corrected with optional chaining
+                    goals: goalsInput?.value.trim() || '',
+                    submissionDate: new Date().toISOString(), // Record submission time
+                };
+                console.log("handleSubmit: Extracted submissionData:", submissionData);
+
+
                 // Path to the pending students collection in the owner's public artifacts
                 // This collection will be created under /artifacts/{appId}/public_submissions/{ownerId}/pendingStudents
                 const submissionsCollectionRef = collection(db, `artifacts/${appId}/public_submissions/${ownerId}/pendingStudents`);
                 await addDoc(submissionsCollectionRef, submissionData);
                 showCustomModal("Your information has been submitted successfully! Thank you.");
                 // Clear form fields after submission
-                document.getElementById('firstName').value = '';
-                document.getElementById('lastName').value = '';
-                document.getElementById('studentPhone').value = '';
-                document.getElementById('parentName').value = '';
-                document.getElementById('parentPhone').value = '';
-                document.getElementById('goals').value = '';
+                if (firstNameInput) firstNameInput.value = '';
+                if (lastNameInput) lastNameInput.value = '';
+                if (studentPhoneInput) studentPhoneInput.value = '';
+                if (parentNameInput) parentNameInput.value = '';
+                if (parentPhoneInput) parentPhoneInput.value = '';
+                if (goalsInput) goalsInput.value = '';
 
             } catch (error) {
                 console.error("Submission failed:", error);
@@ -371,10 +390,10 @@
 
                     // Format phone numbers as user types
                     const studentPhoneInput = document.getElementById('studentPhone');
-                    studentPhoneInput.oninput = (e) => { e.target.value = formatPhoneNumber(e.target.value); };
+                    if (studentPhoneInput) studentPhoneInput.oninput = (e) => { e.target.value = formatPhoneNumber(e.target.value); };
 
                     const parentPhoneInput = document.getElementById('parentPhone');
-                    parentPhoneInput.oninput = (e) => { e.target.value = formatPhoneNumber(e.target.value); };
+                    if (parentPhoneInput) parentPhoneInput.oninput = (e) => { e.target.value = formatPhoneNumber(e.target.value); };
                 }
             }
 
