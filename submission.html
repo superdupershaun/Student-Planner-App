@@ -240,6 +240,22 @@
         let auth;
         let ownerId = null; // The ID of the planner owner (from URL parameter)
 
+        // IMPORTANT: Use your actual Firebase Web API Key and App ID here.
+        const firebaseConfig = {
+            apiKey: "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA",
+            authDomain: "private-lessons-ab22f.firebaseapp.com",
+            projectId: "private-lessons-ab22f",
+            storageBucket: "private-lessons-ab22f.firebasestorage.app",
+            messagingSenderId: "21096957752",
+            appId: "1:21096957752:web:0cf6a8d3556b40cb57a3cd",
+            measurementId: "G-JMKM2MM8DN"
+        };
+
+        // Ensure __app_id is defined in the Canvas environment.
+        // For deployed versions, use the appId from firebaseConfig if __app_id is not available.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.appId;
+
+
         // Utility function to escape characters for HTML
         function escapeHtml(str) {
             if (typeof str !== 'string') return str;
@@ -251,7 +267,7 @@
         // Helper function to convert numerical proficiency to display string
         function getTumblingProficiencyDisplay(value) {
             if (value === null || value === undefined) return "Not rated";
-            if (value >= 67) return "Hot �";
+            if (value >= 67) return "Hot 🔥";
             if (value >= 34) return "Warm ⭐";
             return "Cold 🧊";
         }
@@ -305,16 +321,8 @@
         // Initialize Firebase and get owner ID from URL
         async function initializeForm() {
             try {
-                // IMPORTANT: Use your actual Firebase Web API Key and App ID here.
-                const firebaseConfig = {
-                    apiKey: "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA",
-                    authDomain: "private-lessons-ab22f.firebaseapp.com",
-                    projectId: "private-lessons-ab22f",
-                    storageBucket: "private-lessons-ab22f.firebasestorage.app",
-                    messagingSenderId: "21096957752",
-                    appId: "1:21096957752:web:0cf6a8d3556b40cb57a3cd",
-                    measurementId: "G-JMKM2MM8DN"
-                };
+                // IMPORTANT: Firebase config already defined globally
+                // const firebaseConfig = {...}; // Removed local definition
 
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
@@ -714,4 +722,3 @@
     </script>
 </body>
 </html>
-�
