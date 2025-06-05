@@ -181,48 +181,58 @@
 
         // --- Firebase Initialization and Authentication ---
         async function initializeFirebaseAndAuth() {
+            console.log("initializeFirebaseAndAuth: Start");
             try {
                 if (!app) {
+                    console.log("initializeFirebaseAndAuth: Initializing Firebase app and services.");
                     app = initializeApp(firebaseConfig);
                     db = getFirestore(app);
                     auth = getAuth(app);
+                    console.log("initializeFirebaseAndAuth: Firebase initialized.");
+                } else {
+                    console.log("initializeFirebaseAndAuth: Firebase already initialized.");
                 }
 
-                // Sign in anonymously for submission forms
-                await signInAnonymously(auth);
-                console.log("Signed in anonymously for submission.");
+                console.log("initializeFirebaseAndAuth: Setting up onAuthStateChanged listener.");
+                // We use onAuthStateChanged to ensure the user object is resolved
+                const unsubscribe = onAuthStateChanged(auth, (user) => {
+                    console.log("onAuthStateChanged callback fired.");
+                    unsubscribe(); // Unsubscribe immediately after the first state change to prevent re-runs
 
-                onAuthStateChanged(auth, (user) => {
                     if (user) {
+                        console.log("onAuthStateChanged: User is logged in (UID:", user.uid, ").");
                         isAuthReady = true;
                         // Extract ownerId from URL after auth is ready
                         const urlParams = new URLSearchParams(window.location.search);
                         ownerId = urlParams.get('ownerId');
 
                         if (!ownerId) {
+                            console.error("onAuthStateChanged: Owner ID missing in URL.");
                             showCustomModal("Error: Missing owner ID in URL. Please use the shareable link provided by your coach.");
-                            isLoading = false; // Stop loading if ownerId is missing
-                            renderApp();
-                            return;
+                        } else {
+                            console.log("onAuthStateChanged: Owner ID from URL:", ownerId);
                         }
-                        console.log("Owner ID from URL:", ownerId);
-                        isLoading = false; // Stop loading when ownerId is successfully obtained
-                        renderApp(); // Initial render after auth and ownerId are ready
                     } else {
-                        // This case should ideally not happen if signInAnonymously is successful
-                        // but handles if for some reason user object is null
+                        console.log("onAuthStateChanged: No user is logged in after auth state check.");
                         showCustomModal("Authentication failed for submission form. Please try again.");
-                        isLoading = false;
-                        renderApp();
                     }
+                    isLoading = false; // Set loading to false regardless of ownerId or auth success/failure here
+                    renderApp(); // Rerender the app with the determined state
                 });
 
+                // Explicitly call signInAnonymously to trigger the auth state change
+                // The onAuthStateChanged listener above will capture the result
+                console.log("initializeFirebaseAndAuth: Calling signInAnonymously.");
+                await signInAnonymously(auth);
+                console.log("initializeFirebaseAndAuth: signInAnonymously call completed.");
+
             } catch (error) {
-                console.error("Firebase initialization or anonymous sign-in error:", error);
+                console.error("initializeFirebaseAndAuth: Error in catch block:", error);
                 showCustomModal(`Form setup error: ${escapeHtml(error.message)}`);
-                isLoading = false;
+                isLoading = false; // Ensures loading stops on initial error
                 renderApp();
             }
+            console.log("initializeFirebaseAndAuth: End of function (async operations initiated).");
         }
 
         // --- Submission Logic ---
@@ -233,10 +243,15 @@
                 showCustomModal("Error: Form cannot submit. Missing owner ID.");
                 return;
             }
-            if (!isAuthReady) {
-                showCustomModal("Form is still loading. Please wait a moment.");
+            if (isLoading) { // Check isLoading to prevent double submission during active load
+                showCustomModal("Form is still processing or loading. Please wait a moment.");
                 return;
             }
+            if (!isAuthReady) {
+                 showCustomModal("Form is not ready for submission. Please wait until loading is complete.");
+                 return;
+            }
+
 
             isLoading = true; // Show loading spinner during submission
             renderApp();
