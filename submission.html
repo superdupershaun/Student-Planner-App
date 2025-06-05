@@ -63,7 +63,7 @@
         }
         .btn-blue:hover {
             background-color: #1d4ed8;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 44px 6px -2px rgba(0, 0, 0, 0.05);
         }
         .loading-spinner {
             border-top-color: #3b82f6;
@@ -196,7 +196,7 @@
                 console.log("initializeFirebaseAndAuth: Setting up onAuthStateChanged listener.");
                 // We use onAuthStateChanged to ensure the user object is resolved
                 const unsubscribe = onAuthStateChanged(auth, (user) => {
-                    console.log("onAuthStateChanged callback fired.");
+                    console.log("onAuthStateChanged callback fired. User:", user ? user.uid : "null");
                     unsubscribe(); // Unsubscribe immediately after the first state change to prevent re-runs
 
                     if (user) {
@@ -213,21 +213,23 @@
                             console.log("onAuthStateChanged: Owner ID from URL:", ownerId);
                         }
                     } else {
-                        console.log("onAuthStateChanged: No user is logged in after auth state check.");
-                        showCustomModal("Authentication failed for submission form. Please try again.");
+                        console.log("onAuthStateChanged: No user is logged in after auth state check. Attempting anonymous sign-in failed or did not resolve.");
+                        // It's possible signInAnonymously failed or hadn't completed before this initial onAuthStateChanged fires.
+                        // We will rely on the catch block of signInAnonymously below for error messages.
+                        isAuthReady = true; // Still set auth ready to true to force render and clear spinner
+                        showCustomModal("Authentication for submission form failed. Please try reloading the page or contact support.");
                     }
-                    isLoading = false; // Set loading to false regardless of ownerId or auth success/failure here
-                    renderApp(); // Rerender the app with the determined state
+                    isLoading = false; // Always stop loading here to prevent indefinite spinner
+                    renderApp(); // Re-render the app with the determined state
                 });
 
                 // Explicitly call signInAnonymously to trigger the auth state change
-                // The onAuthStateChanged listener above will capture the result
                 console.log("initializeFirebaseAndAuth: Calling signInAnonymously.");
                 await signInAnonymously(auth);
-                console.log("initializeFirebaseAndAuth: signInAnonymously call completed.");
+                console.log("initializeFirebaseAndAuth: signInAnonymously call completed successfully.");
 
             } catch (error) {
-                console.error("initializeFirebaseAndAuth: Error in catch block:", error);
+                console.error("initializeFirebaseAndAuth: Error in main try-catch block:", error);
                 showCustomModal(`Form setup error: ${escapeHtml(error.message)}`);
                 isLoading = false; // Ensures loading stops on initial error
                 renderApp();
@@ -243,15 +245,11 @@
                 showCustomModal("Error: Form cannot submit. Missing owner ID.");
                 return;
             }
-            if (isLoading) { // Check isLoading to prevent double submission during active load
-                showCustomModal("Form is still processing or loading. Please wait a moment.");
-                return;
-            }
-            if (!isAuthReady) {
+            // Ensure auth is ready and not currently loading before allowing submission
+            if (isLoading || !isAuthReady) {
                  showCustomModal("Form is not ready for submission. Please wait until loading is complete.");
                  return;
             }
-
 
             isLoading = true; // Show loading spinner during submission
             renderApp();
