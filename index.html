@@ -1139,7 +1139,7 @@
                 return;
             }
             try {
-                // 1. Add to main students collection
+                // 1. Add to main students collection - Ensure all new fields are mapped
                 const newStudentData = {
                     firstName: submission.firstName || '',
                     lastName: submission.lastName || '',
@@ -1147,12 +1147,12 @@
                     studentPhone: submission.studentPhone || '',
                     parentPhone: submission.parentPhone || '',
                     goals: submission.goals || '',
-                    // Default values for skills and focus category as they are not in submission form
-                    tumblingSkillProficiencies: [],
-                    flyingSkillProficiencies: [],
-                    focusCategory: focusCategories[0].name,
-                    color: predefinedColors[0], // Assign a default color
-                    assignedDays: [] // No assigned days from submission form
+                    // Correctly map skill proficiencies from submission
+                    tumblingSkillProficiencies: submission.tumblingSkillProficiencies || [],
+                    flyingSkillProficiencies: submission.flyingSkillProficiencies || [],
+                    focusCategory: submission.focusCategory || focusCategories[0].name, // If form sends focus, use it, else default
+                    color: predefinedColors[Math.floor(Math.random() * predefinedColors.length)], // Assign a random color
+                    assignedDays: [] // Still no assigned days from submission form, assign manually in planner
                 };
                 const studentsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/students`);
                 await addDoc(studentsCollectionRef, newStudentData);
@@ -1238,7 +1238,7 @@
                     </div>
 
                     <!-- Share Submission Link Section -->
-                    <div class="mb-8 p-4 border border-gray-200 rounded-lg bg-blue-50">
+                    <div class="mb-8 p-4 border border-blue-200 rounded-lg bg-blue-50">
                         <h2 class="text-2xl font-semibold text-blue-800 mb-4">Share Student Submission Form</h2>
                         <p class="text-gray-700 mb-4">Click the button below to generate a shareable link for parents/students to submit their information directly to your planner.</p>
                         <button type="button" id="generateShareLinkBtn" class="btn btn-blue mb-4">Generate Shareable Link</button>
@@ -1266,6 +1266,18 @@
                                         </p>
                                         ${submission.parentName ? `<p class="text-gray-600 text-sm">Parent: ${escapeTemplateLiteral(submission.parentName)} ${submission.parentPhone ? `(${escapeTemplateLiteral(submission.parentPhone)})` : ''}</p>` : ''}
                                         ${submission.goals ? `<p class="text-gray-600 text-sm mt-1">Goals: ${escapeTemplateLiteral(submission.goals)}</p>` : ''}
+                                        ${(submission.tumblingSkillProficiencies || []).length > 0 ?
+                                            `<p class="font-semibold mt-2">Tumbling Skills:</p>` +
+                                            (submission.tumblingSkillProficiencies || []).map(ts => `
+                                                <p class="ml-4 text-sm">- ${escapeTemplateLiteral(ts.skill)}: ${escapeTemplateLiteral(getTumblingProficiencyDisplay(ts.proficiency))}</p>
+                                            `).join('')
+                                        : ''}
+                                        ${(submission.flyingSkillProficiencies || []).length > 0 ?
+                                            `<p class="font-semibold mt-2">Flying Skills:</p>` +
+                                            (submission.flyingSkillProficiencies || []).map(fs => `
+                                                <p class="ml-4 text-sm">- ${escapeTemplateLiteral(fs.skill)}: ${escapeTemplateLiteral(getFlyingProficiencyDisplay(fs.proficiency))}</p>
+                                            `).join('')
+                                        : ''}
                                         <p class="text-gray-500 text-xs mt-2">Submitted: ${new Date(submission.submissionDate).toLocaleString()}</p>
                                         <div class="flex gap-2 mt-4">
                                             <button type="button" class="btn btn-green text-sm flex-1" data-approve-submission="${escapeTemplateLiteral(submission.id)}">Approve</button>
@@ -1819,7 +1831,7 @@
                     if (generateShareLinkBtn) {
                         generateShareLinkBtn.onclick = generateShareLink;
                     }
-                    const copyShareLinkBtn = document.getElementById('copyShareLinkBtn');
+                    const copyShareLinkBtn = document.getElementById('copyShareLinkInput');
                     if (copyShareLinkBtn) {
                         copyShareLinkBtn.onclick = copyShareLinkToClipboard;
                     }
