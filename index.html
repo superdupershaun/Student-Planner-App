@@ -361,7 +361,7 @@
             apiKey: "AIzaSyATxeJJ7j2HcYm7Ca2ThVtz9HabuQjmHbA",
             authDomain: "private-lessons-ab22f.firebaseapp.com",
             projectId: "private-lessons-ab22f",
-            storageBucket: "private-lessons-ab22f.firebaseapp.com",
+            storageBucket: "private-lessons-ab22f.firebasestorage.app",
             messagingSenderId: "21096957752",
             appId: "1:21096957752:web:0cf6a8d3556b40cb57a3cd",
             measurementId: "G-JMKM2MM8DN"
@@ -612,14 +612,17 @@
                         userId = user.uid;
                         userEmail = user.email; // Store email if available
                         console.log("Auth state changed: User ID set to", userId, "Email:", userEmail);
+                        setupFirestoreListeners(); // Setup ALL listeners once authenticated user is known
                     } else {
-                        userId = crypto.randomUUID(); // Fallback to anonymous ID
+                        // User is NOT logged in with email/password
+                        userId = null; // Clear userId if not authenticated by email/password
                         userEmail = null;
-                        console.log("Auth state changed: Anonymous User ID set.");
+                        console.log("Auth state changed: No email/password user logged in.");
+                        students = []; // Clear students if not logged in
+                        pendingSubmissions = []; // Clear pending submissions if not logged in
                     }
                     isAuthReady = true;
-                    setupFirestoreListeners(); // Setup ALL listeners once auth is ready
-                    renderApp(); // Initial render after auth is ready
+                    renderApp(); // Initial render after auth is ready or changed
                 });
 
                 // Attempt custom token sign-in if available (Canvas environment)
@@ -628,22 +631,19 @@
                         await signInWithCustomToken(auth, __initial_auth_token);
                         console.log("Signed in with custom token.");
                     } catch (authError) {
-                        console.warn("Custom token mismatch. The provided custom token is invalid. Attempting anonymous sign-in as a fallback.");
+                        console.warn("Custom token mismatch. The provided custom token is invalid. Please sign in with email/password.");
                         showCustomModal(
                             `Authentication failed: The provided custom token is invalid. ` +
-                            `The app will attempt to sign in anonymously to proceed. ` +
-                            `You can still use the planner, but data will be tied to an anonymous user ID. ` +
+                            `Please sign in with your email and password to access your planner data. ` +
                             `(Error: ${escapeTemplateLiteral(authError.message)})`
                         );
-                        await signInAnonymously(auth); // Fallback to anonymous
-                        console.log("Signed in anonymously after custom token mismatch.");
+                        // Do NOT fall back to anonymous here, force email/password login for planner owner
                     }
                 } else {
-                    // If no custom token, and no user is currently logged in, sign in anonymously
-                    // This handles cases where the user might have previously signed out or is new.
+                    // If no custom token and no user currently logged in (e.g., first visit or after sign out)
                     if (!auth.currentUser) {
-                        await signInAnonymously(auth);
-                        console.log("Signed in anonymously (no custom token provided and no existing user).");
+                        console.log("No custom token provided and no existing user. Awaiting email/password sign-in.");
+                        // The onAuthStateChanged listener will handle UI update
                     }
                 }
 
@@ -694,7 +694,7 @@
             try {
                 await signOut(auth);
                 showCustomModal("Signed out successfully!");
-                // After sign out, onAuthStateChanged will trigger, setting userId to a new anonymous ID
+                // onAuthStateChanged will set userId to null, clearing data
             } catch (error) {
                 console.error("Error signing out:", error);
                 showCustomModal(`Sign out failed: ${escapeTemplateLiteral(error.message)}`);
@@ -703,8 +703,11 @@
 
         // --- Firestore Data Listeners ---
         function setupFirestoreListeners() {
-            if (!isAuthReady || !db || !userId) {
-                console.log("Skipping Firestore listener setup: Auth not ready or userId not available.");
+            // Only set up listeners if an email/password user is logged in
+            if (!isAuthReady || !db || !userId || !userEmail) {
+                console.log("Skipping Firestore listener setup: Not an email/password user or Auth not ready.");
+                students = []; // Ensure student list is clear if not logged in
+                pendingSubmissions = []; // Ensure pending submissions list is clear if not logged in
                 return;
             }
 
@@ -773,7 +776,7 @@
                 showCustomModal(`Error loading students: ${escapeTemplateLiteral(error.message)}`);
             });
 
-            // Listener for pending submissions - UPDATED PATH
+            // Listener for pending submissions
             const pendingSubmissionsCollectionRef = collection(db, `artifacts/${appId}/public_submissions/${userId}/pendingStudents`);
             onSnapshot(pendingSubmissionsCollectionRef, (snapshot) => {
                 pendingSubmissions = snapshot.docs.map(doc => ({
@@ -830,8 +833,9 @@
         // --- Event Handlers for Student Data ---
         async function handleAddStudent(event) {
             event.preventDefault();
-            if (!newStudentFirstName.trim() || !newStudentLastName.trim() || !userId) {
-                showCustomModal("Please enter student's first and last name, and ensure you are logged in.");
+            // Ensure userId is present (meaning an email/password user is logged in)
+            if (!newStudentFirstName.trim() || !newStudentLastName.trim() || !userId || !userEmail) {
+                showCustomModal("Please enter student's first and last name, and ensure you are logged in with your email/password.");
                 return;
             }
 
@@ -879,8 +883,9 @@
 
         async function handleUpdateStudent(event) {
             event.preventDefault();
-            if (!editingStudentFirstName.trim() || !editingStudentLastName.trim() || !userId || !editingStudentId) {
-                showCustomModal("Please enter student's first and last name, and ensure a student is selected for editing.");
+            // Ensure userId is present (meaning an email/password user is logged in)
+            if (!editingStudentFirstName.trim() || !editingStudentLastName.trim() || !userId || !userEmail || !editingStudentId) {
+                showCustomModal("Please enter student's first and last name, and ensure a student is selected for editing, and you are logged in.");
                 return;
             }
 
@@ -928,6 +933,11 @@
         }
 
         async function handleDeleteStudent(studentIdToDelete) {
+            // Ensure userId is present (meaning an email/password user is logged in)
+            if (!userId || !userEmail) {
+                showCustomModal("Please log in with your email/password to delete students.");
+                return;
+            }
             try {
                 const studentDocRef = doc(db, `artifacts/${appId}/users/${userId}/students`, studentIdToDelete);
                 await deleteDoc(studentDocRef);
@@ -1081,8 +1091,8 @@
 
         // --- New: Submission Link and Pending Submissions Logic ---
         function generateShareLink() {
-            if (!userId) {
-                showCustomModal("Please sign in to generate a shareable link.");
+            if (!userId || !userEmail) { // Require email/password login to generate shareable link
+                showCustomModal("Please sign in with your email/password to generate a shareable link.");
                 return;
             }
             // Assumes submission.html is in the same directory as index.html
@@ -1123,6 +1133,11 @@
         }
 
         async function handleApproveSubmission(submission) {
+            // Ensure userId is present (meaning an email/password user is logged in)
+            if (!userId || !userEmail) {
+                showCustomModal("Please log in with your email/password to approve submissions.");
+                return;
+            }
             try {
                 // 1. Add to main students collection
                 const newStudentData = {
@@ -1154,6 +1169,11 @@
         }
 
         async function handleRejectSubmission(submissionId) {
+            // Ensure userId is present (meaning an email/password user is logged in)
+            if (!userId || !userEmail) {
+                showCustomModal("Please log in with your email/password to reject submissions.");
+                return;
+            }
             try {
                 // Delete from pending submissions - UPDATED PATH
                 const pendingSubmissionDocRef = doc(db, `artifacts/${appId}/public_submissions/${userId}/pendingStudents`, submissionId);
@@ -1171,6 +1191,7 @@
             const appDiv = document.getElementById('app');
             let htmlContent = '';
 
+            // Show loading spinner initially or if auth is not ready
             if (!isAuthReady) {
                 htmlContent = `
                     <div id="loading-spinner" class="flex flex-col items-center justify-center h-64">
@@ -1179,7 +1200,30 @@
                         <p class="text-sm text-gray-500 mt-2">Please wait while we connect to your data.</p>
                     </div>
                 `;
-            } else {
+            } else if (!userEmail) { // Prompt for login if not signed in with email/password
+                 htmlContent = `
+                    <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Student Planner</h1>
+                    <div class="mb-8 p-4 border border-blue-200 rounded-lg bg-blue-50">
+                        <h2 class="text-2xl font-semibold text-blue-800 mb-4">Welcome! Please Sign In</h2>
+                        <p class="text-gray-700 mb-4">Sign in with your email and password to manage your student data and accept new submissions.</p>
+                        <form id="auth-form" class="grid grid-cols-1 gap-4">
+                            <div class="form-group">
+                                <label for="loginEmail" class="label">Email:</label>
+                                <input type="email" id="loginEmail" class="input-field" value="${escapeTemplateLiteral(loginEmail)}" placeholder="your@example.com" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="loginPassword" class="label">Password:</label>
+                                <input type="password" id="loginPassword" class="input-field" value="${escapeTemplateLiteral(loginPassword)}" placeholder="********" required>
+                            </div>
+                            <div class="flex gap-4 mt-2">
+                                <button type="submit" id="signInBtn" class="btn btn-blue flex-1">Sign In</button>
+                                <button type="submit" id="signUpBtn" class="btn btn-green flex-1">Sign Up (First Time)</button>
+                            </div>
+                        </form>
+                    </div>
+                 `;
+            }
+            else { // Main planner content if logged in with email/password
                 htmlContent = `
                     <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Student Planner</h1>
 
@@ -1187,30 +1231,10 @@
                     <div class="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
                         <h2 class="text-2xl font-semibold text-gray-700 mb-4">Authentication</h2>
                         <div class="flex items-center justify-between mb-4">
-                            ${userEmail ?
-                                `<p class="text-gray-700">Logged in as: <span class="font-medium">${escapeTemplateLiteral(userEmail)}</span></p>` :
-                                `<p class="text-gray-700">Currently using anonymous ID: <span class="font-mono bg-gray-100 px-2 py-1 rounded">${escapeTemplateLiteral(userId)}</span></p>`
-                            }
-                            ${userEmail ? `
-                                <button type="button" id="signOutBtn" class="btn btn-red text-sm">Sign Out</button>
-                            ` : ''}
+                            <p class="text-gray-700">Logged in as: <span class="font-medium">${escapeTemplateLiteral(userEmail)}</span></p>
+                            <button type="button" id="signOutBtn" class="btn btn-red text-sm">Sign Out</button>
                         </div>
-                        ${!userEmail ? `
-                            <form id="auth-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="form-group">
-                                    <label for="loginEmail" class="label">Email:</label>
-                                    <input type="email" id="loginEmail" class="input-field" value="${escapeTemplateLiteral(loginEmail)}" placeholder="your@example.com">
-                                </div>
-                                <div class="form-group">
-                                    <label for="loginPassword" class="label">Password:</label>
-                                    <input type="password" id="loginPassword" class="input-field" value="${escapeTemplateLiteral(loginPassword)}" placeholder="********">
-                                </div>
-                                <div class="col-span-1 md:col-span-2 flex gap-4 mt-2">
-                                    <button type="submit" id="signInBtn" class="btn btn-blue flex-1">Sign In</button>
-                                    <button type="submit" id="signUpBtn" class="btn btn-green flex-1">Sign Up</button>
-                                </div>
-                            </form>
-                        ` : ''}
+                        <p class="text-gray-700 text-sm">Your User ID: <span class="font-mono bg-gray-100 px-2 py-1 rounded">${escapeTemplateLiteral(userId)}</span></p>
                     </div>
 
                     <!-- Share Submission Link Section -->
@@ -1788,172 +1812,175 @@
                 if (signUpBtn) signUpBtn.onclick = handleSignUp;
                 if (signOutBtn) signOutBtn.onclick = handleSignOut;
 
-                // Share Submission Link
-                const generateShareLinkBtn = document.getElementById('generateShareLinkBtn');
-                if (generateShareLinkBtn) {
-                    generateShareLinkBtn.onclick = generateShareLink;
-                }
-                const copyShareLinkBtn = document.getElementById('copyShareLinkBtn');
-                if (copyShareLinkBtn) {
-                    copyShareLinkBtn.onclick = copyShareLinkToClipboard;
-                }
-
-                // Pending Submissions
-                pendingSubmissions.forEach(submission => {
-                    const approveBtn = appDiv.querySelector(`[data-approve-submission="${submission.id}"]`);
-                    if (approveBtn) {
-                        approveBtn.onclick = () => handleApproveSubmission(submission);
+                // Only attach other listeners if user is signed in with email/password
+                if (userEmail) {
+                    // Share Submission Link
+                    const generateShareLinkBtn = document.getElementById('generateShareLinkBtn');
+                    if (generateShareLinkBtn) {
+                        generateShareLinkBtn.onclick = generateShareLink;
                     }
-                    const rejectBtn = appDiv.querySelector(`[data-reject-submission="${submission.id}"]`);
-                    if (rejectBtn) {
-                        rejectBtn.onclick = () => handleRejectSubmission(submission.id);
+                    const copyShareLinkBtn = document.getElementById('copyShareLinkBtn');
+                    if (copyShareLinkBtn) {
+                        copyShareLinkBtn.onclick = copyShareLinkToClipboard;
                     }
-                });
 
-                // Add Student Form
-                const addForm = document.getElementById('add-student-form');
-                if (addForm) {
-                    addForm.onsubmit = handleAddStudent;
-
-                    document.getElementById('newStudentFirstName').oninput = (e) => { newStudentFirstName = e.target.value; };
-                    document.getElementById('newStudentLastName').oninput = (e) => { newStudentLastName = e.target.value; };
-                    document.getElementById('newParentName').oninput = (e) => { newParentName = e.target.value; };
-
-                    const newStudentPhoneInput = document.getElementById('newStudentPhone');
-                    newStudentPhoneInput.oninput = (e) => {
-                        e.target.value = formatPhoneNumber(e.target.value);
-                        newStudentPhone = e.target.value;
-                    };
-                    const newParentPhoneInput = document.getElementById('newParentPhone');
-                    newParentPhoneInput.oninput = (e) => {
-                        e.target.value = formatPhoneNumber(e.target.value);
-                        newParentPhone = e.target.value;
-                    };
-
-                    document.getElementById('newGoals').oninput = (e) => { newGoals = e.target.value; };
-                    document.getElementById('newFocusCategory').onchange = (e) => { newFocusCategory = e.target.value; };
-
-                    // Attach event listeners for new tumbling skill sliders
-                    appDiv.querySelectorAll('#add-student-form input[type="range"][data-skill-type="new-tumbling"]').forEach(slider => {
-                        slider.oninput = (e) => {
-                            const displayElement = addForm.querySelector(`span[data-skill="${e.target.dataset.skill}"][data-skill-type="new-tumbling-display"]`);
-                            handleTumblingSkillChange(e.target.dataset.skill, parseInt(e.target.value), false, displayElement, e.target);
-                        };
+                    // Pending Submissions
+                    pendingSubmissions.forEach(submission => {
+                        const approveBtn = appDiv.querySelector(`[data-approve-submission="${submission.id}"]`);
+                        if (approveBtn) {
+                            approveBtn.onclick = () => handleApproveSubmission(submission);
+                        }
+                        const rejectBtn = appDiv.querySelector(`[data-reject-submission="${submission.id}"]`);
+                        if (rejectBtn) {
+                            rejectBtn.onclick = () => handleRejectSubmission(submission.id);
+                        }
                     });
 
-                    // Attach event listeners for new flying skill sliders
-                    appDiv.querySelectorAll('#add-student-form input[type="range"][data-skill-type="new-flying"]').forEach(slider => {
-                        slider.oninput = (e) => {
-                            const displayElement = addForm.querySelector(`span[data-skill="${e.target.dataset.skill}"][data-skill-type="new-flying-display"]`);
-                            handleFlyingSkillChange(e.target.dataset.skill, parseInt(e.target.value), false, displayElement, e.target);
-                        };
-                    });
+                    // Add Student Form
+                    const addForm = document.getElementById('add-student-form');
+                    if (addForm) {
+                        addForm.onsubmit = handleAddStudent;
 
-                    appDiv.querySelectorAll('.color-picker-btn').forEach(button => {
-                        button.onclick = (e) => { selectedColor = e.target.dataset.color; renderApp(); };
-                    });
+                        document.getElementById('newStudentFirstName').oninput = (e) => { newStudentFirstName = e.target.value; };
+                        document.getElementById('newStudentLastName').oninput = (e) => { newStudentLastName = e.target.value; };
+                        document.getElementById('newParentName').oninput = (e) => { newParentName = e.target.value; };
 
-                    appDiv.querySelectorAll('#add-student-form input[type="checkbox"]').forEach(checkbox => {
-                        checkbox.onchange = (e) => { toggleDayForNewStudent(e.target.dataset.day); };
-                    });
-
-                    // Event listeners for time selects in add form
-                    appDiv.querySelectorAll('#add-student-form select[data-day-time-type]').forEach(select => {
-                        select.onchange = (e) => { handleTimeChangeForNewStudent(e.target.dataset.day, e.target.dataset.dayTimeType, e.target.value); };
-                    });
-                }
-
-                // Toggle details for existing students
-                appDiv.querySelectorAll('[data-toggle-details]').forEach(element => {
-                    element.onclick = (e) => { toggleStudentDetails(e.target.dataset.toggleDetails); };
-                });
-
-                // Edit/Delete Buttons for Existing Students
-                appDiv.querySelectorAll('[data-edit-student]').forEach(button => {
-                    button.onclick = () => {
-                        const studentId = button.dataset.editStudent;
-                        const studentToEdit = students.find(s => s.id === studentId);
-                        if (studentToEdit) { startEditing(studentToEdit); }
-                    };
-                });
-
-                appDiv.querySelectorAll('[data-delete-student]').forEach(button => {
-                    button.onclick = () => {
-                        const studentId = button.dataset.deleteStudent;
-                        handleDeleteStudent(studentId);
-                    };
-                });
-
-                // Edit Student Forms (dynamically attached)
-                if (editingStudentId) {
-                    const editForm = document.getElementById(`edit-student-form-${editingStudentId}`);
-                    if (editForm) {
-                        editForm.onsubmit = handleUpdateStudent;
-
-                        editForm.querySelector(`[data-edit-field="firstName"]`).oninput = (e) => { editingStudentFirstName = e.target.value; };
-                        editForm.querySelector(`[data-edit-field="lastName"]`).oninput = (e) => { editingStudentLastName = e.target.value; };
-                        editForm.querySelector(`[data-edit-field="parentName"]`).oninput = (e) => { editingParentName = e.target.value; };
-
-                        const editStudentPhoneInput = editForm.querySelector(`[data-edit-field="studentPhone"]`);
-                        editStudentPhoneInput.oninput = (e) => {
+                        const newStudentPhoneInput = document.getElementById('newStudentPhone');
+                        newStudentPhoneInput.oninput = (e) => {
                             e.target.value = formatPhoneNumber(e.target.value);
-                            editingStudentPhone = e.target.value;
+                            newStudentPhone = e.target.value;
                         };
-                        const editParentPhoneInput = editForm.querySelector(`[data-edit-field="parentPhone"]`);
-                        editParentPhoneInput.oninput = (e) => {
+                        const newParentPhoneInput = document.getElementById('newParentPhone');
+                        newParentPhoneInput.oninput = (e) => {
                             e.target.value = formatPhoneNumber(e.target.value);
-                            editingParentPhone = e.target.value;
+                            newParentPhone = e.target.value;
                         };
 
-                        editForm.querySelector(`[data-edit-field="goals"]`).oninput = (e) => { editingGoals = e.target.value; };
-                        editForm.querySelector(`[data-edit-field="focusCategory"]`).onchange = (e) => { editingFocusCategory = e.target.value; };
+                        document.getElementById('newGoals').oninput = (e) => { newGoals = e.target.value; };
+                        document.getElementById('newFocusCategory').onchange = (e) => { newFocusCategory = e.target.value; };
 
-                        // Attach event listeners for editing tumbling skill sliders
-                        editForm.querySelectorAll(`input[type="range"][data-skill-type="edit-tumbling"][data-student-id="${editingStudentId}"]`).forEach(slider => {
+                        // Attach event listeners for new tumbling skill sliders
+                        appDiv.querySelectorAll('#add-student-form input[type="range"][data-skill-type="new-tumbling"]').forEach(slider => {
                             slider.oninput = (e) => {
-                                const displayElement = editForm.querySelector(`span[data-skill="${e.target.dataset.skill}"][data-skill-type="edit-tumbling-display"]`);
-                                handleTumblingSkillChange(e.target.dataset.skill, parseInt(e.target.value), true, displayElement, e.target);
+                                const displayElement = addForm.querySelector(`span[data-skill="${e.target.dataset.skill}"][data-skill-type="new-tumbling-display"]`);
+                                handleTumblingSkillChange(e.target.dataset.skill, parseInt(e.target.value), false, displayElement, e.target);
                             };
                         });
 
-                        // Attach event listeners for editing flying skill sliders
-                        editForm.querySelectorAll(`input[type="range"][data-skill-type="edit-flying"][data-student-id="${editingStudentId}"]`).forEach(slider => {
+                        // Attach event listeners for new flying skill sliders
+                        appDiv.querySelectorAll('#add-student-form input[type="range"][data-skill-type="new-flying"]').forEach(slider => {
                             slider.oninput = (e) => {
-                                const displayElement = editForm.querySelector(`span[data-skill="${e.target.dataset.skill}"][data-skill-type="edit-flying-display"]`);
-                                handleFlyingSkillChange(e.target.dataset.skill, parseInt(e.target.value), true, displayElement, e.target);
+                                const displayElement = addForm.querySelector(`span[data-skill="${e.target.dataset.skill}"][data-skill-type="new-flying-display"]`);
+                                handleFlyingSkillChange(e.target.dataset.skill, parseInt(e.target.value), false, displayElement, e.target);
                             };
                         });
 
-                        editForm.querySelectorAll(`[data-edit-color="${editingStudentId}"]`).forEach(button => {
-                            button.onclick = (e) => { editingStudentColor = e.target.dataset.color; renderApp(); };
+                        appDiv.querySelectorAll('.color-picker-btn').forEach(button => {
+                            button.onclick = (e) => { selectedColor = e.target.dataset.color; renderApp(); };
                         });
 
-                        editForm.querySelectorAll(`input[type="checkbox"][data-edit-day="${editingStudentId}"]`).forEach(checkbox => {
-                            checkbox.onchange = (e) => { toggleDayForEditingStudent(e.target.dataset.day); };
+                        appDiv.querySelectorAll('#add-student-form input[type="checkbox"]').forEach(checkbox => {
+                            checkbox.onchange = (e) => { toggleDayForNewStudent(e.target.dataset.day); };
                         });
 
-                        // Event listeners for time selects in edit form
-                        editForm.querySelectorAll(`select[data-day-time-type][data-day]`).forEach(select => {
-                            select.onchange = (e) => { handleTimeChangeForEditingStudent(e.target.dataset.day, e.target.dataset.dayTimeType, e.target.value); };
+                        // Event listeners for time selects in add form
+                        appDiv.querySelectorAll('#add-student-form select[data-day-time-type]').forEach(select => {
+                            select.onchange = (e) => { handleTimeChangeForNewStudent(e.target.dataset.day, e.target.dataset.dayTimeType, e.target.value); };
                         });
+                    }
 
-                        const cancelEditButton = editForm.querySelector(`[data-cancel-edit="${editingStudentId}"]`);
-                        if (cancelEditButton) {
-                            cancelEditButton.onclick = () => {
-                                editingStudentId = null;
-                                editingStudentFirstName = '';
-                                editingStudentLastName = '';
-                                editingParentName = '';
-                                editingStudentPhone = '';
-                                editingParentPhone = '';
-                                editingTumblingSkillProficiencies = [];
-                                editingFlyingSkillProficiencies = [];
-                                editingGoals = '';
-                                editingFocusCategory = '';
-                                editingStudentColor = '';
-                                editingStudentDays = [];
-                                renderApp();
+                    // Toggle details for existing students
+                    appDiv.querySelectorAll('[data-toggle-details]').forEach(element => {
+                        element.onclick = (e) => { toggleStudentDetails(e.target.dataset.toggleDetails); };
+                    });
+
+                    // Edit/Delete Buttons for Existing Students
+                    appDiv.querySelectorAll('[data-edit-student]').forEach(button => {
+                        button.onclick = () => {
+                            const studentId = button.dataset.editStudent;
+                            const studentToEdit = students.find(s => s.id === studentId);
+                            if (studentToEdit) { startEditing(studentToEdit); }
+                        };
+                    });
+
+                    appDiv.querySelectorAll('[data-delete-student]').forEach(button => {
+                        button.onclick = () => {
+                            const studentId = button.dataset.deleteStudent;
+                            handleDeleteStudent(studentId);
+                        };
+                    });
+
+                    // Edit Student Forms (dynamically attached)
+                    if (editingStudentId) {
+                        const editForm = document.getElementById(`edit-student-form-${editingStudentId}`);
+                        if (editForm) {
+                            editForm.onsubmit = handleUpdateStudent;
+
+                            editForm.querySelector(`[data-edit-field="firstName"]`).oninput = (e) => { editingStudentFirstName = e.target.value; };
+                            editForm.querySelector(`[data-edit-field="lastName"]`).oninput = (e) => { editingStudentLastName = e.target.value; };
+                            editForm.querySelector(`[data-edit-field="parentName"]`).oninput = (e) => { editingParentName = e.target.value; };
+
+                            const editStudentPhoneInput = editForm.querySelector(`[data-edit-field="studentPhone"]`);
+                            editStudentPhoneInput.oninput = (e) => {
+                                e.target.value = formatPhoneNumber(e.target.value);
+                                editingStudentPhone = e.target.value;
                             };
+                            const editParentPhoneInput = editForm.querySelector(`[data-edit-field="parentPhone"]`);
+                            editParentPhoneInput.oninput = (e) => {
+                                e.target.value = formatPhoneNumber(e.target.value);
+                                editingParentPhone = e.target.value;
+                            };
+
+                            editForm.querySelector(`[data-edit-field="goals"]`).oninput = (e) => { editingGoals = e.target.value; };
+                            editForm.querySelector(`[data-edit-field="focusCategory"]`).onchange = (e) => { editingFocusCategory = e.target.value; };
+
+                            // Attach event listeners for editing tumbling skill sliders
+                            editForm.querySelectorAll(`input[type="range"][data-skill-type="edit-tumbling"][data-student-id="${editingStudentId}"]`).forEach(slider => {
+                                slider.oninput = (e) => {
+                                    const displayElement = editForm.querySelector(`span[data-skill="${e.target.dataset.skill}"][data-skill-type="edit-tumbling-display"]`);
+                                    handleTumblingSkillChange(e.target.dataset.skill, parseInt(e.target.value), true, displayElement, e.target);
+                                };
+                            });
+
+                            // Attach event listeners for editing flying skill sliders
+                            editForm.querySelectorAll(`input[type="range"][data-skill-type="edit-flying"][data-student-id="${editingStudentId}"]`).forEach(slider => {
+                                slider.oninput = (e) => {
+                                    const displayElement = editForm.querySelector(`span[data-skill="${e.target.dataset.skill}"][data-skill-type="edit-flying-display"]`);
+                                    handleFlyingSkillChange(e.target.dataset.skill, parseInt(e.target.value), true, displayElement, e.target);
+                                };
+                            });
+
+                            editForm.querySelectorAll(`[data-edit-color="${editingStudentId}"]`).forEach(button => {
+                                button.onclick = (e) => { editingStudentColor = e.target.dataset.color; renderApp(); };
+                            });
+
+                            editForm.querySelectorAll(`input[type="checkbox"][data-edit-day="${editingStudentId}"]`).forEach(checkbox => {
+                                checkbox.onchange = (e) => { toggleDayForEditingStudent(e.target.dataset.day); };
+                            });
+
+                            // Event listeners for time selects in edit form
+                            editForm.querySelectorAll(`select[data-day-time-type][data-day]`).forEach(select => {
+                                select.onchange = (e) => { handleTimeChangeForEditingStudent(e.target.dataset.day, e.target.dataset.dayTimeType, e.target.value); };
+                            });
+
+                            const cancelEditButton = editForm.querySelector(`[data-cancel-edit="${editingStudentId}"]`);
+                            if (cancelEditButton) {
+                                cancelEditButton.onclick = () => {
+                                    editingStudentId = null;
+                                    editingStudentFirstName = '';
+                                    editingStudentLastName = '';
+                                    editingParentName = '';
+                                    editingStudentPhone = '';
+                                    editingParentPhone = '';
+                                    editingTumblingSkillProficiencies = [];
+                                    editingFlyingSkillProficiencies = [];
+                                    editingGoals = '';
+                                    editingFocusCategory = '';
+                                    editingStudentColor = '';
+                                    editingStudentDays = [];
+                                    renderApp();
+                                };
+                            }
                         }
                     }
                 }
