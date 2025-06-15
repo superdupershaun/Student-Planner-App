@@ -1,0 +1,358 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f3f4f6;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 1rem;
+}
+.container {
+    background-color: #ffffff;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 64rem;
+    margin-bottom: 2rem;
+}
+.form-group {
+    margin-bottom: 1rem;
+}
+.label {
+    display: block;
+    color: #374151;
+    font-size: 0.875rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.input-field {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    appearance: none;
+    border: 1px solid #d1d5db;
+    border-radius: 0.25rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    color: #374151;
+    line-height: 1.25;
+    outline: none;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.input-field:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+.btn {
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+.btn-blue {
+    background-color: #2563eb;
+    color: #ffffff;
+}
+.btn-blue:hover {
+    background-color: #1d4ed8;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+.btn-green {
+    background-color: #10b981;
+    color: #ffffff;
+}
+.btn-green:hover {
+    background-color: #059669;
+}
+.btn-yellow {
+    background-color: #f59e0b;
+    color: #ffffff;
+}
+.btn-yellow:hover {
+    background-color: #d97706;
+}
+.btn-red {
+    background-color: #ef4444;
+    color: #ffffff;
+}
+.btn-red:hover {
+    background-color: #dc2626;
+}
+.btn-gray {
+    background-color: #6b7280;
+    color: #ffffff;
+}
+.btn-gray:hover {
+    background-color: #4b5563;
+}
+.btn-purple { /* For availability section */
+    background-color: #8b5cf6; /* Tailwind violet-500 */
+    color: #ffffff;
+}
+.btn-purple:hover {
+    background-color: #7c3aed; /* Tailwind violet-600 */
+}
+.color-picker-btn {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    border: 2px solid #d1d5db;
+    cursor: pointer;
+    transition: border-color 0.15s ease-in-out, ring-width 0.15s ease-in-out, ring-color 0.15s ease-in-out;
+}
+.color-picker-btn.selected {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+.calendar-day {
+    background-color: #eff6ff;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 7.5rem;
+}
+.calendar-day h3 {
+    font-weight: 700;
+    color: #1e40af;
+    margin-bottom: 0.5rem;
+}
+.calendar-day.day-blacked-out {
+    background-color: #e5e7eb; /* Tailwind gray-200 */
+    opacity: 0.7;
+    position: relative; /* For potential overlay text */
+}
+.student-item {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    text-align: center;
+}
+.student-time {
+    display: block;
+    font-size: 0.75rem;
+    color: #4b5563;
+}
+.modal {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(75, 85, 99, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+.modal-content {
+    background-color: #ffffff;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    max-width: 24rem;
+    width: 100%;
+    text-align: center;
+}
+.modal-content h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 1rem;
+}
+.modal-content p {
+    color: #374151;
+    margin-bottom: 1.5rem;
+}
+.loading-spinner {
+    border-top-color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    animation: spin 1s linear infinite;
+    border-radius: 9999px;
+    height: 4rem;
+    width: 4rem;
+    border-width: 4px;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Custom Slider Styles for Temperature Gauge */
+.temperature-gauge-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-top: 0.5rem;
+}
+.temperature-gauge-labels {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
+.temperature-gauge-labels span {
+    flex: 1;
+    text-align: center;
+}
+.temperature-gauge-labels span:first-child { text-align: left; }
+.temperature-gauge-labels span:last-child { text-align: right; }
+
+.temperature-gauge-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 1rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(to right, #3b82f6, #facc15, #ef4444); /* Cold to Hot gradient */
+    outline: none;
+    opacity: 0.9;
+    transition: opacity .2s;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.temperature-gauge-slider:hover {
+    opacity: 1;
+}
+
+/* Default slider thumb (Cold) */
+.temperature-gauge-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: #BFDBFE; /* Light blue for cold */
+    border: 2px solid #60A5FA; /* Blue border */
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: background 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.temperature-gauge-slider::-moz-range-thumb {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: #BFDBFE; /* Light blue for cold */
+    border: 2px solid #60A5FA; /* Blue border */
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: background 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+/* Styles for the "Warm" slider thumb */
+.temperature-gauge-slider.slider-warm-value::-webkit-slider-thumb {
+    background: #FDE68A; /* Light yellow/gold for warm */
+    border-color: #FBBF24; /* Orange border */
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.5); /* Subtle glow */
+}
+.temperature-gauge-slider.slider-warm-value::-moz-range-thumb {
+    background: #FDE68A; /* Light yellow/gold for warm */
+    border-color: #FBBF24; /* Orange border */
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.5); /* Subtle glow */
+}
+
+/* Styles for the "Hot" slider thumb */
+.temperature-gauge-slider.slider-hot-value::-webkit-slider-thumb {
+    background: #FF4500; /* OrangeRed */
+    border-color: #DC143C; /* Crimson */
+    box-shadow: 0 0 0 4px rgba(255, 69, 0, 0.5); /* Fiery glow */
+}
+.temperature-gauge-slider.slider-hot-value::-moz-range-thumb {
+    background: #FF4500; /* OrangeRed */
+    border-color: #DC143C; /* Crimson */
+    box-shadow: 0 0 0 4px rgba(255, 69, 0, 0.5); /* Fiery glow */
+}
+
+/* Ensure default thumb style is 'cold' if no specific class is applied */
+.temperature-gauge-slider.slider-cold-value::-webkit-slider-thumb {
+    background: #BFDBFE; /* Light blue for cold */
+    border-color: #60A5FA; /* Blue border */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.temperature-gauge-slider.slider-cold-value::-moz-range-thumb {
+    background: #BFDBFE; /* Light blue for cold */
+    border-color: #60A5FA; /* Blue border */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.current-proficiency-display {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    margin-top: 0.5rem;
+    text-align: center;
+    width: 100%;
+}
+
+.explanation-bar {
+    width: 100%;
+    height: 1rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(to right, #3b82f6, #facc15, #ef4444);
+    margin-bottom: 0.5rem;
+}
+.explanation-text {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* Align text and emojis vertically */
+    width: 100%;
+    font-size: 0.75rem;
+    color: #4b5563;
+    margin-bottom: 1rem;
+}
+.explanation-text span {
+    flex: 1;
+    text-align: center;
+    display: flex; /* Use flex to align text and emoji */
+    flex-direction: column; /* Stack text and emoji */
+    align-items: center; /* Center content within span */
+}
+.explanation-text span:first-child { text-align: left; align-items: flex-start; }
+.explanation-text span:last-child { text-align: right; align-items: flex-end; }
+
+.explanation-emoji {
+    font-size: 2rem; /* Make emojis bigger */
+    line-height: 1; /* Adjust line height to prevent extra space */
+    margin-bottom: 0.25rem; /* Space between emoji and text */
+}.collapsible-header {
+  cursor: pointer;
+  user-select: none; /* Prevents text selection on click */
+  padding: 10px;
+  background-color: #f1f1f1;
+  border: 1px solid #ccc;
+  margin-top: 5px;
+  display: flex; /* Aligns title and icon */
+  justify-content: space-between; /* Pushes icon to the right */
+  align-items: center; /* Vertically aligns items */
+}
+
+.collapsible-header:hover {
+  background-color: #e0e0e0;
+}
+
+.collapsible-content {
+  padding: 0 18px;
+  overflow: hidden;
+  background-color: #f9f9f9;
+  border: 1px solid #ccc;
+  border-top: none;
+  /* Smooth transition for opening/closing */
+  max-height: 0;
+  transition: max-height 0.3s ease-out;
+}
+
+.collapsible-content.open {
+  /* max-height needs to be large enough for your content */
+  /* We'll set this dynamically with JS if content height varies a lot,
+     or you can set a sufficiently large fixed value if you know the max height. */
+  /* For now, let's use a large enough value.
+     A more robust solution would calculate this. */
+  max-height: 1000px; /* Adjust as needed */
+}
+
+.toggle-icon {
+  font-weight: bold;
+  margin-left: 10px;
+}
