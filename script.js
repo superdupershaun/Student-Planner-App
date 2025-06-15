@@ -14,9 +14,16 @@ let isLoadingLLM = false; // New: To control LLM loading spinner
 let llmOutputModalMessage = ''; // New: For LLM output modal
 let showLlmOutputModalState = false; // Renamed to avoid conflict with function name
 
+// New state for UI dropdowns
+let showShareLinkDropdown = false;
+let showPendingSubmissionsDropdown = false;
+
 // New state for pending submissions
 let pendingSubmissions = [];
 let submissionShareLink = ''; // To store the generated shareable link
+
+// New: State variable for view mode
+let currentViewMode = 'pc'; // Possible values: 'pc', 'tablet', 'phone'
 
 // Utility function to escape characters that could break HTML or JavaScript contexts
 function escapeTemplateLiteral(str) {
@@ -120,6 +127,13 @@ let editingFocusCategory = '';
 let editingStudentColor = '';
 let editingStudentDays = [];
 let expandedStudentId = null;
+
+// State for main collapsible sections
+let collapsibleSectionStates = {
+    'addStudentFormSection': false, // Start Add Student form collapsed
+    'coachAvailabilitySection': false, // Start Availability collapsed
+    'currentStudentsSection': true,  // Start Current Students section open
+};
 
 let loginEmail = ''; // New: For login/signup
 let loginPassword = ''; // New: For login/signup
@@ -281,24 +295,37 @@ function checkOverlap(range1, range2) {
 
 // --- Collapsible Section Helper ---
 function toggleCollapsible(headerElement) {
+    console.log("toggleCollapsible called for:", headerElement);
     const content = headerElement.nextElementSibling;
     const icon = headerElement.querySelector('.toggle-icon');
+    const collapsibleKey = headerElement.dataset.collapsibleKey;
 
     if (!content || !content.classList.contains('collapsible-content')) {
         console.warn("Collapsible content not found for header:", headerElement);
         return;
     }
 
-    headerElement.classList.toggle('open'); // For icon rotation or other styling
+    // Determine the new state (should it be open after this click?)
+    let shouldBeOpenAfterToggle;
+    if (collapsibleKey && collapsibleSectionStates.hasOwnProperty(collapsibleKey)) {
+        collapsibleSectionStates[collapsibleKey] = !collapsibleSectionStates[collapsibleKey]; // Toggle state
+        shouldBeOpenAfterToggle = collapsibleSectionStates[collapsibleKey];
+        console.log(`State for ${collapsibleKey} is now ${shouldBeOpenAfterToggle}`);
+    } else {
+        // For collapsibles not managed by global state (e.g., nested ones)
+        // Base new state on current visual state (is it currently open?)
+        const isCurrentlyOpen = headerElement.classList.contains('open');
+        shouldBeOpenAfterToggle = !isCurrentlyOpen;
+    }
 
-    if (content.style.maxHeight && content.style.maxHeight !== "0px") {
+    headerElement.classList.toggle('open', shouldBeOpenAfterToggle);
+
+    if (shouldBeOpenAfterToggle) {
+        content.style.maxHeight = content.scrollHeight + "px";
+        if (icon) icon.textContent = '−';
+    } else {
         content.style.maxHeight = "0px";
         if (icon) icon.textContent = '+'; // Or your preferred icon for closed
-    } else {
-        // Set maxHeight to its scrollHeight for a smooth transition
-        content.style.maxHeight = content.scrollHeight + "px";
-        if (icon) icon.textContent = '−'; // Or your preferred icon for open (e.g., minus)
-        // If using transform for icon: if (icon) icon.textContent = '+'; and CSS handles rotation
     }
 }
 
@@ -820,7 +847,16 @@ function startEditing(student) {
 }
 
 function toggleStudentDetails(studentId) {
+    console.log("toggleStudentDetails called with studentId:", studentId);
+    console.log("Current expandedStudentId (before toggle):", expandedStudentId);
     expandedStudentId = (expandedStudentId === studentId) ? null : studentId;
+    console.log("New expandedStudentId (after toggle):", expandedStudentId);
+
+    // If a student's details are being expanded, ensure the "Current Students" section is open.
+    if (expandedStudentId !== null) {
+        collapsibleSectionStates['currentStudentsSection'] = true;
+    }
+
     renderApp();
 }
 
@@ -833,9 +869,8 @@ function generateShareLink() {
     // Assumes submission.html is in the same directory as index.html
     // If your GitHub Pages URL is like `https://username.github.io/repo-name/`,
     // then `window.location.origin` will be `https://username.github.io`
-    // and `window.location.pathname` will be `/repo-name/index.html`.
+    // and `window.location.pathname` might be `/repo-name/` or `/repo-name/index.html`.
     // We need to construct the path to submission.html correctly.
-    const baseUrl = window.location.origin;
     const currentPath = window.location.href;
     // Remove the current filename (e.g., index.html or a directory if served as root) and query params/hash
     // Ensures the path ends with a slash to correctly append submission.html
@@ -850,7 +885,8 @@ function generateShareLink() {
 }
 
 function copyShareLinkToClipboard() {
-    const linkInput = document.getElementById('submissionShareLinkInput');
+    // Target the input field within the dropdown if it exists, otherwise the old one (for graceful transition if needed)
+    const linkInput = document.getElementById('submissionShareLinkInputInDropdown') || document.getElementById('submissionShareLinkInput');
     if (linkInput) {
         linkInput.select();
         linkInput.setSelectionRange(0, 99999); // For mobile devices
@@ -991,14 +1027,35 @@ function handleUnavailableTimeChange(day, index, type, timeValue) { // timeValue
     }
 }
 
+// New: Function to set the view mode
+function setViewMode(mode) {
+    currentViewMode = mode;
+    renderApp();
+}
+
+// --- Helper to close all top dropdowns ---
+function closeAllTopDropdowns() {
+    let changed = false;
+    // Close dropdowns if they are open
+    if (showShareLinkDropdown) {
+        showShareLinkDropdown = false;
+        changed = true;
+    }
+    if (showPendingSubmissionsDropdown) {
+        showPendingSubmissionsDropdown = false;
+        changed = true;
+    }
+    return changed;
+}
+
 // --- Main Render Function ---
 function renderApp() {
     const appDiv = document.getElementById('app');
-    let htmlContent = '';
+    let appInnerContent = ''; // Will hold loading, login, or main app UI
 
     // Show loading spinner initially or if auth is not ready
     if (!isAuthReady) {
-        htmlContent = `
+        appInnerContent = `
             <div id="loading-spinner" class="flex flex-col items-center justify-center h-64" role="status" aria-live="polite">
                 <div class="loading-spinner"></div>
                 <p class="mt-4 text-lg text-gray-700">Loading planner...</p>
@@ -1006,14 +1063,14 @@ function renderApp() {
             </div>
         `;
     } else if (!userEmail) { // Prompt for login if not signed in with email/password
-         htmlContent = `
+         appInnerContent = `
             <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Student Planner</h1>
             <div class="mb-8 p-4 border border-blue-200 rounded-lg bg-blue-50">
                 <h2 class="text-2xl font-semibold text-blue-800 mb-4">Welcome! Please Sign In</h2>
                 <p class="text-gray-700 mb-4">Sign in with your email and password to manage your student data and accept new submissions.</p>
                 <form id="auth-form" class="grid grid-cols-1 gap-4">
                     <div class="form-group">
-                        <label for="loginEmail" class="label">Email:</label>
+                        <label for="loginEmail" class="label text-gray-700">Email:</label>
                         <input type="email" id="loginEmail" class="input-field" value="${escapeTemplateLiteral(loginEmail)}" placeholder="your@example.com" required>
                     </div>
                     <div class="form-group">
@@ -1029,75 +1086,107 @@ function renderApp() {
          `;
     }
     else { // Main planner content if logged in with email/password
-        htmlContent = `
+        appInnerContent = `
             <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Student Planner</h1>
 
-            <!-- Auth Section -->
-            <div class="mb-8 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Authentication</h2>
-                <div class="flex items-center justify-between mb-4">
-                    <p class="text-gray-700">Logged in as: <span class="font-medium">${escapeTemplateLiteral(userEmail)}</span></p>
-                    <button type="button" id="signOutBtn" class="btn btn-red text-sm">Sign Out</button>
-                </div>
-                <p class="text-gray-700 text-sm">Your User ID: <span class="font-mono bg-gray-100 px-2 py-1 rounded">${escapeTemplateLiteral(userId)}</span></p>
-            </div>
-
-            <!-- Share Submission Link Section -->
-            <div class="mb-8 p-4 border border-blue-200 rounded-lg bg-blue-50">
-                <h2 class="text-2xl font-semibold text-blue-800 mb-4">Share Student Submission Form</h2>
-                <p class="text-gray-700 mb-4">Click the button below to generate a shareable link for parents/students to submit their information directly to your planner.</p>
-                <button type="button" id="generateShareLinkBtn" class="btn btn-blue mb-4">Generate Shareable Link</button>
-                ${submissionShareLink ? `
-                    <div class="form-group flex items-center gap-2">
-                        <input type="text" id="submissionShareLinkInput" class="input-field flex-grow" value="${escapeTemplateLiteral(submissionShareLink)}" readonly>
-                        <button type="button" id="copyShareLinkBtn" class="btn btn-green px-4 py-2">Copy</button>
+            <!-- Top Bar for Dropdowns -->
+            <div class="relative flex justify-between items-start mb-6 z-20">
+                <!-- Pending Submissions Dropdown (Top Left) -->
+                <div class="relative inline-block text-left">
+                    <div>
+                        <button type="button" id="togglePendingSubmissionsDropdownBtn" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500">
+                            Pending Submissions (${pendingSubmissions.length})
+                            <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
                     </div>
-                    <p class="text-sm text-gray-600 mt-2">Share this link with your students/parents!</p>
-                ` : ''}
-            </div>
-
-            <!-- Pending Student Submissions -->
-            <div class="mb-8 p-4 border border-yellow-300 rounded-lg bg-yellow-50">
-                <h2 class="text-2xl font-semibold text-yellow-800 mb-4">Pending Student Submissions (${pendingSubmissions.length})</h2>
-                ${pendingSubmissions.length === 0 ? `
-                    <p class="text-gray-700">No pending submissions at the moment.</p>
-                ` : `
-                    <ul class="space-y-4">
-                        ${pendingSubmissions.map(submission => `
-                            <li class="p-4 bg-white rounded-lg shadow-sm border border-yellow-200">
-                                <p class="font-semibold text-gray-800">
-                                    ${escapeTemplateLiteral(submission.firstName)} ${escapeTemplateLiteral(submission.lastName)}
-                                    ${submission.studentPhone ? `(${escapeTemplateLiteral(submission.studentPhone)})` : ''}
-                                </p>
-                                ${submission.parentName ? `<p class="text-gray-600 text-sm">Parent: ${escapeTemplateLiteral(submission.parentName)} ${submission.parentPhone ? `(${escapeTemplateLiteral(submission.parentPhone)})` : ''}</p>` : ''}
-                                ${submission.goals ? `<p class="text-gray-600 text-sm mt-1">Goals: ${escapeTemplateLiteral(submission.goals)}</p>` : ''}
-                                ${(submission.tumblingSkillProficiencies || []).length > 0 ?
-                                    `<p class="font-semibold mt-2">Tumbling Skills:</p>` +
-                                    (submission.tumblingSkillProficiencies || []).map(ts => `
-                                        <p class="ml-4 text-sm">- ${escapeTemplateLiteral(ts.skill)}: ${escapeTemplateLiteral(getTumblingProficiencyDisplay(ts.proficiency))}</p>
-                                    `).join('')
-                                : ''}
-                                ${(submission.flyingSkillProficiencies || []).length > 0 ?
-                                    `<p class="font-semibold mt-2">Flying Skills:</p>` +
-                                    (submission.flyingSkillProficiencies || []).map(fs => `
-                                        <p class="ml-4 text-sm">- ${escapeTemplateLiteral(fs.skill)}: ${escapeTemplateLiteral(getFlyingProficiencyDisplay(fs.proficiency))}</p>
-                                    `).join('')
-                                : ''}
-                                <p class="text-gray-500 text-xs mt-2">Submitted: ${new Date(submission.submissionDate).toLocaleString()}</p>
-                                <div class="flex gap-2 mt-4">
-                                    <button type="button" class="btn btn-green text-sm flex-1" data-approve-submission="${escapeTemplateLiteral(submission.id)}">Approve</button>
-                                    <button type="button" class="btn btn-red text-sm flex-1" data-reject-submission="${escapeTemplateLiteral(submission.id)}">Reject</button>
+                    ${showPendingSubmissionsDropdown ? `
+                        <div class="origin-top-left absolute left-0 mt-2 w-80 sm:w-96 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none max-h-96 overflow-y-auto">
+                            <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="pending-submissions-menu">
+                                <div class="p-3">
+                                    <h3 class="text-lg font-semibold text-yellow-800 mb-3">Pending (${pendingSubmissions.length})</h3>
+                                    ${pendingSubmissions.length === 0 ? `
+                                        <p class="text-gray-600 text-sm">No pending submissions.</p>
+                                    ` : `
+                                        <ul class="space-y-3">
+                                            ${pendingSubmissions.map(submission => `
+                                                <li class="p-3 bg-yellow-50 rounded-lg shadow-sm border border-yellow-200">
+                                                    <p class="font-semibold text-gray-800 text-sm">
+                                                        ${escapeTemplateLiteral(submission.firstName)} ${escapeTemplateLiteral(submission.lastName)}
+                                                        ${submission.studentPhone ? `(${escapeTemplateLiteral(submission.studentPhone)})` : ''}
+                                                    </p>
+                                                    ${submission.parentName ? `<p class="text-gray-600 text-xs mt-0.5">Parent: ${escapeTemplateLiteral(submission.parentName)} ${submission.parentPhone ? `(${escapeTemplateLiteral(submission.parentPhone)})` : ''}</p>` : ''}
+                                                    ${submission.goals ? `<p class="text-gray-600 text-xs mt-0.5">Goals: ${escapeTemplateLiteral(submission.goals)}</p>` : ''}
+                                                    ${(submission.tumblingSkillProficiencies || []).length > 0 ?
+                                                        `<p class="font-semibold mt-1 text-xs">Tumbling:</p>` +
+                                                        (submission.tumblingSkillProficiencies || []).map(ts => `
+                                                            <p class="ml-2 text-xs">- ${escapeTemplateLiteral(ts.skill)}: ${escapeTemplateLiteral(getTumblingProficiencyDisplay(ts.proficiency))}</p>
+                                                        `).join('')
+                                                    : ''}
+                                                    ${(submission.flyingSkillProficiencies || []).length > 0 ?
+                                                        `<p class="font-semibold mt-1 text-xs">Flying:</p>` +
+                                                        (submission.flyingSkillProficiencies || []).map(fs => `
+                                                            <p class="ml-2 text-xs">- ${escapeTemplateLiteral(fs.skill)}: ${escapeTemplateLiteral(getFlyingProficiencyDisplay(fs.proficiency))}</p>
+                                                        `).join('')
+                                                    : ''}
+                                                    <p class="text-gray-500 text-xs mt-1">Submitted: ${new Date(submission.submissionDate).toLocaleDateString()}</p>
+                                                    <div class="flex gap-2 mt-2">
+                                                        <button type="button" class="btn btn-green btn-xs flex-1" data-approve-submission="${escapeTemplateLiteral(submission.id)}">Approve</button>
+                                                        <button type="button" class="btn btn-red btn-xs flex-1" data-reject-submission="${escapeTemplateLiteral(submission.id)}">Reject</button>
+                                                    </div>
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    `}
                                 </div>
-                            </li>
-                        `).join('')}
-                    </ul>
-                `}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- Share Submission Link Dropdown (Top Right) -->
+                <div class="relative inline-block text-right">
+                    <div>
+                        <button type="button" id="toggleShareLinkDropdownBtn" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-100 focus:ring-indigo-500">
+                            Share Form
+                            <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                    ${showShareLinkDropdown ? `
+                        <div class="origin-top-right absolute right-0 mt-2 w-80 sm:w-96 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <div class="py-1" role="menu" aria-orientation="vertical" aria-labelledby="share-form-menu">
+                                <div class="p-3">
+                                    <h3 class="text-lg font-semibold text-blue-800 mb-2">Share Student Submission Form</h3>
+                                    <p class="text-gray-600 mb-3 text-sm">Generate a link for parents/students to submit their info.</p>
+                                    <button type="button" id="generateShareLinkBtnInDropdown" class="btn btn-blue btn-sm mb-3 w-full">Generate Shareable Link</button>
+                                    ${submissionShareLink ? `
+                                        <div class="form-group flex items-center gap-2">
+                                            <input type="text" id="submissionShareLinkInputInDropdown" class="input-field input-sm flex-grow" value="${escapeTemplateLiteral(submissionShareLink)}" readonly>
+                                            <button type="button" id="copyShareLinkBtnInDropdown" class="btn btn-green btn-sm px-3 py-1.5">Copy</button>
+                                        </div>
+                                        <p class="text-xs text-gray-500 mt-1">Share this link with students/parents!</p>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
             </div>
 
             <!-- New: Set Coach Availability Section -->
             <div class="mb-8 p-4 border border-purple-300 rounded-lg bg-purple-50">
-                <h2 class="text-2xl font-semibold text-purple-800 mb-4">Set Your Weekly Availability</h2>
-                <div class="space-y-4">
+                ${ (() => { // IIFE to manage local const for key and isOpen
+                    const key = 'coachAvailabilitySection';
+                    const isOpen = collapsibleSectionStates[key] === true;
+                    return `
+                <div class="collapsible-header ${isOpen ? 'open' : ''}" data-collapsible-key="${key}">
+                    <h2 class="text-2xl font-semibold text-purple-800 mb-0">Set Your Weekly Availability</h2>
+                    <span class="toggle-icon">${isOpen ? '−' : '+'}</span>
+                </div>
+                <div class="collapsible-content space-y-4" ${isOpen ? '' : 'style="max-height: 0px;"'}>
                     ${daysOfWeek.map(day => `
                         <div class="p-3 border border-purple-200 rounded-md bg-white">
                             <div class="flex items-center justify-between mb-2">
@@ -1132,12 +1221,22 @@ function renderApp() {
                         </div>
                     `).join('')}
                 </div>
+                    `;
+                })() }
             </div>
 
 
             <!-- Add New Student Form -->
-            <form id="add-student-form" class="mb-8 p-4 border border-gray-200 rounded-lg">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Add New Student</h2>
+            <div class="mb-8 p-4 border border-gray-200 rounded-lg"> <!-- Outer container for collapsible -->
+                ${ (() => {
+                    const key = 'addStudentFormSection';
+                    const isOpen = collapsibleSectionStates[key] === true;
+                    return `
+                <div class="collapsible-header ${isOpen ? 'open' : ''}" data-collapsible-key="${key}">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-0">Add New Student</h2>
+                    <span class="toggle-icon">${isOpen ? '−' : '+'}</span>
+                </div>
+                <form id="add-student-form" class="collapsible-content" ${isOpen ? '' : 'style="max-height: 0px;"'}> <!-- Form becomes the collapsible content -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="form-group lg:col-span-1">
                         <label for="newStudentFirstName" class="label">First Name:</label>
@@ -1316,6 +1415,9 @@ function renderApp() {
                     <button type="submit" class="btn btn-blue flex-1">Add Student</button>
                     <!-- Removed "Generate New Lesson Plan" button -->
                 </div>
+                </form> <!-- This was an extra closing form tag, corrected below -->
+                    `;
+                })() }
             </form>
 
             <!-- Edit Student Form (Conditional Rendering) -->
@@ -1504,8 +1606,16 @@ function renderApp() {
 
 
             <div class="mb-8 p-4 border border-gray-200 rounded-lg">
-                <h2 class="text-2xl font-semibold text-gray-700 mb-4">Current Students</h2>
-                ${students.length === 0 ? `
+                ${ (() => {
+                    const key = 'currentStudentsSection';
+                    const isOpen = collapsibleSectionStates[key] === true;
+                    return `
+                <div class="collapsible-header ${isOpen ? 'open' : ''}" data-collapsible-key="${key}">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-0">Current Students</h2>
+                    <span class="toggle-icon">${isOpen ? '−' : '+'}</span>
+                </div>
+                <div class="collapsible-content" ${isOpen ? '' : 'style="max-height: 0px;"'}>
+                    ${students.length === 0 ? `
                     <p class="text-gray-500">No students added yet. Use the form above to add your first student!</p>
                 ` : `
                     <ul class="space-y-3">
@@ -1515,12 +1625,13 @@ function renderApp() {
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
                                     ${students.map(student => `
                                         <div class="bg-white p-4 rounded-lg shadow-md flex flex-col justify-between" style="border-left: 5px solid ${escapeTemplateLiteral(student.color)};">
-                                            <div>
-                                                <span class="font-bold text-lg cursor-pointer" style="color: ${escapeTemplateLiteral(student.color)};" data-toggle-details="${escapeTemplateLiteral(student.id)}">
+                                            <div class="flex-grow">
+                                                <span class="font-bold text-lg cursor-pointer hover:underline flex justify-between items-center" style="color: ${escapeTemplateLiteral(student.color)};" data-toggle-details="${escapeTemplateLiteral(student.id)}">
                                                     ${escapeTemplateLiteral(student.firstName)} ${escapeTemplateLiteral(student.lastName)} ${escapeTemplateLiteral(getStarsForCategory(student.focusCategory))}
+                                                    <svg class="inline-block w-4 h-4 ml-1 transition-transform transform ${expandedStudentId === student.id ? 'rotate-180' : ''}" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                                                 </span>
                                                 ${expandedStudentId === student.id ? `
-                                                    <div class="text-gray-600 text-sm mt-1">
+                                                    <div class="mt-3 pt-3 border-t border-gray-200 bg-gray-50 p-3 rounded-b-md text-gray-700 text-sm space-y-1">
                                                         <p><strong>Student:</strong> ${escapeTemplateLiteral(student.firstName)} ${escapeTemplateLiteral(student.lastName)} ${student.studentPhone ? `(${escapeTemplateLiteral(student.studentPhone)})` : ''}</p>
                                                         ${student.parentName ? `<p><strong>Parent:</strong> ${escapeTemplateLiteral(student.parentName)} ${student.parentPhone ? `(${escapeTemplateLiteral(student.parentPhone)})` : ''}</p>` : ''}
                                                         ${student.tumblingSkillProficiencies && student.tumblingSkillProficiencies.length > 0 ?
@@ -1556,6 +1667,9 @@ function renderApp() {
                         </li>
                     </ul>
                 `}
+                </div>
+                    `;
+                })() }
             </div>
 
             <div class="p-4 border border-gray-200 rounded-lg">
@@ -1583,59 +1697,104 @@ function renderApp() {
                                 <ul class="list-none p-0 m-0 text-center">
                                     ${studentsOnThisDay.map(student => {
                                         const assignment = student.assignedDays.find(item => item.day === day);
-                                        if (!assignment || !assignment.startTime || !assignment.endTime) return '';
+                                        if (!assignment || !assignment.startTime || !assignment.endTime) {
+                                            return `<!-- Student ${student.firstName} has incomplete assignment for ${day} -->`;
+                                        }
 
-                                        const studentRange = parseTimeRange(`${assignment.startTime} - ${assignment.endTime}`);
+                                        const studentMainRange = parseTimeRange(`${assignment.startTime} - ${assignment.endTime}`);
                                         let timeDisplayHtml = '';
-                                        let hasOverlap = false;
 
-                                        // Collect all overlapping segments for this student's current assignment
-                                        const overlaps = [];
-                                        for (const otherStudent of studentsOnThisDay) {
-                                            if (otherStudent.id === student.id) continue; // Don't compare with self
+                                        if (studentMainRange.start >= studentMainRange.end) {
+                                            timeDisplayHtml = `<span class="text-red-500">Invalid time</span>`;
+                                        } else {
+                                            let eventPoints = [studentMainRange.start, studentMainRange.end];
 
-                                            const otherAssignment = otherStudent.assignedDays.find(item => item.day === day);
-                                            if (otherAssignment && otherAssignment.startTime && otherAssignment.endTime) {
-                                                const otherRange = parseTimeRange(`${otherAssignment.startTime} - ${otherAssignment.endTime}`);
-                                                const overlapStart = Math.max(studentRange.start, otherRange.start);
-                                                const overlapEnd = Math.min(studentRange.end, otherRange.end);
+                                            // Add Coach Unavailable Event Points (only if day is not blacked out)
+                                            if (!dayAvailability.isBlackedOut && dayAvailability.unavailableTimes) {
+                                                dayAvailability.unavailableTimes.forEach(slot => {
+                                                    eventPoints.push(slot.startMinutes, slot.endMinutes);
+                                                });
+                                            }
 
-                                                if (overlapStart < overlapEnd) {
-                                                    overlaps.push({ start: overlapStart, end: overlapEnd });
-                                                    hasOverlap = true;
+                                            // Add Other Student Event Points
+                                            studentsOnThisDay.forEach(otherStudent => {
+                                                if (otherStudent.id === student.id) return;
+                                                const otherAssignment = otherStudent.assignedDays.find(item => item.day === day);
+                                                if (otherAssignment && otherAssignment.startTime && otherAssignment.endTime) {
+                                                    const otherRange = parseTimeRange(`${otherAssignment.startTime} - ${otherAssignment.endTime}`);
+                                                    if (otherRange.start < otherRange.end) {
+                                                        eventPoints.push(otherRange.start, otherRange.end);
+                                                    }
                                                 }
+                                            });
+
+                                            const uniqueSortedEventPoints = [...new Set(eventPoints)].sort((a, b) => a - b);
+                                            const timeSegments = [];
+
+                                            for (let i = 0; i < uniqueSortedEventPoints.length - 1; i++) {
+                                                const segStart = uniqueSortedEventPoints[i];
+                                                const segEnd = uniqueSortedEventPoints[i+1];
+
+                                                if (segStart >= segEnd) continue; // Should not happen with unique sorted points
+
+                                                // Consider only segments *within* the current student's main range
+                                                const actualSegStart = Math.max(segStart, studentMainRange.start);
+                                                const actualSegEnd = Math.min(segEnd, studentMainRange.end);
+
+                                                if (actualSegStart >= actualSegEnd) continue;
+
+                                                const midPoint = (actualSegStart + actualSegEnd) / 2;
+                                                let segmentType = 'normal';
+
+                                                // Check Coach Unavailable (Highest Priority, only if day not blacked out)
+                                                if (!dayAvailability.isBlackedOut && dayAvailability.unavailableTimes) {
+                                                    for (const unavailableSlot of dayAvailability.unavailableTimes) {
+                                                        if (midPoint >= unavailableSlot.startMinutes && midPoint < unavailableSlot.endMinutes) {
+                                                            segmentType = 'coach_unavailable';
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+
+                                                // Check Student Conflict (Second Priority, if not coach_unavailable and day not blacked out)
+                                                if (segmentType === 'normal' && !dayAvailability.isBlackedOut) {
+                                                    for (const otherStudent of studentsOnThisDay) {
+                                                        if (otherStudent.id === student.id) continue;
+                                                        const otherAssignment = otherStudent.assignedDays.find(item => item.day === day);
+                                                        if (otherAssignment && otherAssignment.startTime && otherAssignment.endTime) {
+                                                            const otherRange = parseTimeRange(`${otherAssignment.startTime} - ${otherAssignment.endTime}`);
+                                                            if (otherRange.start < otherRange.end && midPoint >= otherRange.start && midPoint < otherRange.end) {
+                                                                segmentType = 'student_conflict';
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                timeSegments.push({ start: actualSegStart, end: actualSegEnd, type: segmentType });
+                                            }
+
+                                            if (timeSegments.length > 0) {
+                                                timeDisplayHtml = timeSegments.map(seg => {
+                                                    const text = `${escapeTemplateLiteral(formatMinutesToTime(seg.start))} - ${escapeTemplateLiteral(formatMinutesToTime(seg.end))}`;
+                                                    if (seg.type === 'coach_unavailable') {
+                                                        return `<span class="text-black line-through decoration-red-500 decoration-2">${text}</span>`;
+                                                    } else if (seg.type === 'student_conflict') {
+                                                        return `<span class="text-red-600 font-bold">${text}</span>`;
+                                                    }
+                                                    return `<span>${text}</span>`; // Normal (will be grey if day is blacked out)
+                                                }).join(' ');
+                                            } else if (studentMainRange.start < studentMainRange.end) {
+                                                // Fallback for a valid slot that didn't generate segments (e.g., isolated, no conflicts)
+                                                timeDisplayHtml = `<span>${escapeTemplateLiteral(assignment.startTime)} - ${escapeTemplateLiteral(assignment.endTime)}</span>`;
                                             }
                                         }
 
-                                        // Sort overlaps by start time to process them sequentially
-                                        overlaps.sort((a, b) => a.start - b.start);
-
-                                        let currentSegmentStart = studentRange.start;
-
-                                        // Build the time display with highlighted overlaps
-                                        for (const overlap of overlaps) {
-                                            // Add non-overlapping segment before current overlap
-                                            if (currentSegmentStart < overlap.start) {
-                                                timeDisplayHtml += `<span>${escapeTemplateLiteral(formatMinutesToTime(currentSegmentStart))} - ${escapeTemplateLiteral(formatMinutesToTime(overlap.start))}</span>`;
-                                            }
-                                            // Add overlapping segment
-                                            timeDisplayHtml += `<span class="text-red-600 font-bold">${escapeTemplateLiteral(formatMinutesToTime(overlap.start))} - ${escapeTemplateLiteral(formatMinutesToTime(overlap.end))}</span>`;
-                                            currentSegmentStart = overlap.end;
-                                        }
-
-                                        // Add remaining non-overlapping segment after all overlaps
-                                        if (currentSegmentStart < studentRange.end) {
-                                            timeDisplayHtml += `<span>${escapeTemplateLiteral(formatMinutesToTime(currentSegmentStart))} - ${escapeTemplateLiteral(formatMinutesToTime(studentRange.end))}</span>`;
-                                        }
-
-                                        // If no overlaps, just display the original time
-                                        if (!hasOverlap) {
-                                            timeDisplayHtml = `<span>${escapeTemplateLiteral(assignment.startTime)} - ${escapeTemplateLiteral(assignment.endTime)}</span>`;
-                                        }
-
+                                        const studentLiClasses = `student-item ${dayAvailability.isBlackedOut ? 'text-gray-500' : ''}`;
+                                        // Apply student's color only if the day is not blacked out.
+                                        const studentLiStyle = dayAvailability.isBlackedOut ? '' : `color: ${escapeTemplateLiteral(student.color)};`;
 
                                         return `
-                                            <li class="student-item" style="color: ${escapeTemplateLiteral(student.color)};">
+                                            <li class="${studentLiClasses}" style="${studentLiStyle}">
                                                 ${escapeTemplateLiteral(student.firstName)} ${escapeTemplateLiteral(student.lastName)} ${escapeTemplateLiteral(getStarsForCategory(student.focusCategory))}
                                                 <span class="student-time">
                                                     ${timeDisplayHtml}
@@ -1649,6 +1808,17 @@ function renderApp() {
                     }).join('')}
                 </div>
             </div>
+
+            <!-- Auth Section (Moved to Bottom) -->
+            <div class="mt-12 mb-6 p-4 border border-gray-300 rounded-lg bg-gray-100 shadow-md">
+                <h2 class="text-xl font-semibold text-gray-700 mb-3 text-center">Account Information</h2>
+                <div class="flex flex-col sm:flex-row items-center justify-between">
+                    <p class="text-gray-600 text-sm mb-2 sm:mb-0">Logged in as: <span class="font-medium text-gray-800">${escapeTemplateLiteral(userEmail)}</span></p>
+                    <button type="button" id="signOutBtn" class="btn btn-red btn-sm">Sign Out</button>
+                </div>
+                <!-- <p class="text-gray-700 text-xs mt-2 text-center">User ID: <span class="font-mono bg-gray-200 px-1 py-0.5 rounded">${escapeTemplateLiteral(userId)}</span></p> -->
+            </div>
+
 
             <!-- General Modal for messages -->
             ${showModal ? `
@@ -1684,7 +1854,30 @@ function renderApp() {
         `;
     }
 
-    appDiv.innerHTML = htmlContent;
+    // Determine wrapper style for view mode
+    let appContentWrapperStyle = 'margin: 0 auto; transition: max-width 0.3s ease-in-out; padding-top: 5rem; padding-bottom: 2rem;'; // Added padding for sticky bar and bottom content
+    if (currentViewMode === 'tablet') {
+        appContentWrapperStyle += 'max-width: 768px;'; // Typical tablet width
+    } else if (currentViewMode === 'phone') {
+        appContentWrapperStyle += 'max-width: 425px;'; // Common phone width
+    } else { // PC mode
+        appContentWrapperStyle += 'max-width: 100%;'; // Full width or a large container like 'max-width: 1400px;'
+    }
+
+    // Construct the final HTML including view mode controls and wrapper
+    const finalHtml = `
+        <div class="view-mode-controls text-center py-3 px-4 bg-gray-800 bg-opacity-80 backdrop-blur-sm rounded-b-lg shadow-lg sticky top-0 z-50 border-b border-gray-700">
+            <span class="mr-3 font-semibold text-gray-200 text-xs sm:text-sm">VIEW AS:</span>
+            <button type="button" class="btn ${currentViewMode === 'phone' ? 'btn-blue' : 'btn-gray'} btn-sm" data-view-mode="phone">Phone</button>
+            <button type="button" class="btn ${currentViewMode === 'tablet' ? 'btn-blue' : 'btn-gray'} btn-sm" data-view-mode="tablet">Tablet</button>
+            <button type="button" class="btn ${currentViewMode === 'pc' ? 'btn-blue' : 'btn-gray'} btn-sm" data-view-mode="pc">Desktop</button>
+        </div>
+        <div id="app-content-wrapper" style="${appContentWrapperStyle}">
+            ${appInnerContent}
+        </div>
+    `;
+
+    appDiv.innerHTML = finalHtml;
 
     // --- Attach Event Listeners (MUST be done after innerHTML update) ---
     if (isAuthReady) {
@@ -1699,21 +1892,45 @@ function renderApp() {
         if (loginPasswordInput) loginPasswordInput.oninput = (e) => { loginPassword = e.target.value; };
         if (signInBtn) signInBtn.onclick = handleSignIn;
         if (signUpBtn) signUpBtn.onclick = handleSignUp;
+        // signOutBtn is part of appInnerContent when userEmail is true, so it's handled below
+
+        // View Mode Buttons (always available if isAuthReady)
+        document.querySelectorAll('.view-mode-controls button[data-view-mode]').forEach(button => {
+            button.onclick = (e) => setViewMode(e.target.dataset.viewMode);
+        });
+
         if (signOutBtn) signOutBtn.onclick = handleSignOut;
 
         // Only attach other listeners if user is signed in with email/password
         if (userEmail) {
-            // Share Submission Link
-            const generateShareLinkBtn = document.getElementById('generateShareLinkBtn');
-            if (generateShareLinkBtn) {
-                generateShareLinkBtn.onclick = generateShareLink;
+            // Dropdown Toggles
+            const togglePendingSubmissionsDropdownBtn = document.getElementById('togglePendingSubmissionsDropdownBtn');
+            if (togglePendingSubmissionsDropdownBtn) {
+                togglePendingSubmissionsDropdownBtn.onclick = () => {
+                    showPendingSubmissionsDropdown = !showPendingSubmissionsDropdown;
+                    if (showPendingSubmissionsDropdown) showShareLinkDropdown = false; // Close other dropdown
+                    renderApp();
+                };
             }
-            const copyShareLinkBtn = document.getElementById('copyShareLinkBtn'); // Corrected ID
-            if (copyShareLinkBtn) {
-                copyShareLinkBtn.onclick = copyShareLinkToClipboard;
+            const toggleShareLinkDropdownBtn = document.getElementById('toggleShareLinkDropdownBtn');
+            if (toggleShareLinkDropdownBtn) {
+                toggleShareLinkDropdownBtn.onclick = () => {
+                    showShareLinkDropdown = !showShareLinkDropdown;
+                    if (showShareLinkDropdown) showPendingSubmissionsDropdown = false; // Close other dropdown
+                    renderApp();
+                };
+            }
+            // Buttons inside the share link dropdown
+            const generateShareLinkBtnInDropdown = document.getElementById('generateShareLinkBtnInDropdown');
+            if (generateShareLinkBtnInDropdown) {
+                generateShareLinkBtnInDropdown.onclick = generateShareLink;
+            }
+            const copyShareLinkBtnInDropdown = document.getElementById('copyShareLinkBtnInDropdown');
+            if (copyShareLinkBtnInDropdown) {
+                copyShareLinkBtnInDropdown.onclick = copyShareLinkToClipboard;
             }
 
-            // Pending Submissions
+            // Pending Submissions (inside dropdown)
             pendingSubmissions.forEach(submission => {
                 const approveBtn = appDiv.querySelector(`[data-approve-submission="${submission.id}"]`);
                 if (approveBtn) {
@@ -1802,7 +2019,7 @@ function renderApp() {
 
             // Toggle details for existing students
             appDiv.querySelectorAll('[data-toggle-details]').forEach(element => {
-                element.onclick = (e) => { toggleStudentDetails(e.target.dataset.toggleDetails); };
+                element.onclick = (e) => { toggleStudentDetails(e.currentTarget.dataset.toggleDetails); }; // Use currentTarget
             });
 
             // Edit/Delete Buttons for Existing Students
@@ -1907,25 +2124,77 @@ function renderApp() {
         if (llmModalButton) { llmModalButton.onclick = hideLlmOutputModal; }
     }
 
-    // Collapsible sections event listeners
-    // Ensure this is attached after all relevant HTML is in the DOM
+    // Post-render setup for collapsible sections
     document.querySelectorAll('.collapsible-header').forEach(header => {
         const content = header.nextElementSibling;
         const icon = header.querySelector('.toggle-icon');
+        const collapsibleKey = header.dataset.collapsibleKey;
 
-        // Set initial state (collapsed)
         if (content && content.classList.contains('collapsible-content')) {
-            content.style.maxHeight = "0px"; // Collapsed by default
-            if (icon) icon.textContent = '+'; 
+            let isEffectivelyOpen;
+
+            if (collapsibleKey && collapsibleSectionStates.hasOwnProperty(collapsibleKey)) {
+                isEffectivelyOpen = collapsibleSectionStates[collapsibleKey];
+                // Sync class and icon with the state
+                header.classList.toggle('open', isEffectivelyOpen);
+                if (icon) icon.textContent = isEffectivelyOpen ? '−' : '+';
+            } else {
+                // For collapsibles not managed by global state (e.g., skills sections within forms)
+                // their state is determined by the 'open' class in the HTML template,
+                // or they default to closed if no 'open' class.
+                isEffectivelyOpen = header.classList.contains('open');
+                if (icon) icon.textContent = isEffectivelyOpen ? '−' : '+'; // Sync icon
+            }
+
+            // Set maxHeight based on the determined open state
+            if (isEffectivelyOpen) {
+                // If it should be open, ensure maxHeight allows content visibility.
+                // scrollHeight gives the actual height of the content.
+                content.style.maxHeight = content.scrollHeight + "px";
+            } else {
+                content.style.maxHeight = "0px";
+            }
+
+            // Add event listener (old ones are removed by innerHTML replacement)
+            header.addEventListener('click', function() { toggleCollapsible(this); });
         }
-        header.addEventListener('click', function() {
-            toggleCollapsible(this);
-        });
     });
 }
 
+let isDocumentClickListenerAdded = false; // Flag to ensure it's added only once
+
 // --- Initial Load ---
 window.onload = () => {
+    // Apply background gradient
+    document.body.style.backgroundImage = 'linear-gradient(to bottom, #87CEEB, #9370DB)'; // Sky Blue to Medium Purple
+    // A slightly more subtle and modern gradient:
+    // document.body.style.backgroundImage = 'linear-gradient(to bottom right, #a0c4ff, #c77dff)'; // Light Blue to Light Purple
+    // document.body.style.backgroundImage = 'linear-gradient(135deg, #6DD5FA 0%, #FF758C 100%)'; // Example: Blue to Pinkish
+    // document.body.style.backgroundImage = 'linear-gradient(to right, #74ebd5, #ACB6E5)'; // Teal to Light Purple/Blue
+    document.body.style.backgroundAttachment = 'fixed';
+    document.body.style.minHeight = '100vh';
+
     initializeFirebaseAndAuth();
     // renderApp() is called by onAuthStateChanged or initializeFirebaseAndAuth error handling
+
+    // Add document click listener for closing dropdowns (only once)
+    if (!isDocumentClickListenerAdded) {
+        document.addEventListener('click', function(event) {
+            const appDiv = document.getElementById('app');
+            if (!appDiv || !appDiv.contains(event.target)) return; // Only act on clicks within the app
+
+            const isDropdownButton = event.target.closest('#togglePendingSubmissionsDropdownBtn, #toggleShareLinkDropdownBtn');
+            // Check against the actual dropdown panel elements if they exist
+            const pendingDropdownPanel = document.querySelector('.origin-top-left.absolute'); // More specific selector if needed
+            const shareDropdownPanel = document.querySelector('.origin-top-right.absolute'); // More specific selector if needed
+
+            let clickedInsideADropdownContent = (pendingDropdownPanel && pendingDropdownPanel.contains(event.target)) ||
+                                              (shareDropdownPanel && shareDropdownPanel.contains(event.target));
+
+            if (!isDropdownButton && !clickedInsideADropdownContent) {
+                if (closeAllTopDropdowns()) renderApp();
+            }
+        });
+        isDocumentClickListenerAdded = true;
+    }
 };
